@@ -8,7 +8,6 @@ import com.raspix.neoforge.cobble_contests.menus.ContestBoothMenu;
 import com.raspix.neoforge.cobble_contests.pokemon.CVs;
 import com.raspix.neoforge.cobble_contests.pokemon.Ribbons;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -32,7 +31,7 @@ public class ContestBlockEntity extends BlockEntity implements MenuProvider {
     private boolean isHost;
     private UUID hostId;
     private int contestType;
-    private Map<UUID, ContestParticipation> participants;
+    private final Map<UUID, ContestParticipation> participants = new HashMap<>();
 
 
 
@@ -76,7 +75,7 @@ public class ContestBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public boolean setContestType(UUID id, int type){
-        if(this.isHost && this.hostId == id){
+        if(this.isHost && Objects.equals(this.hostId, id)){
             contestType = type;
             return true;
         }else if(!this.isHost){
@@ -131,8 +130,9 @@ public class ContestBlockEntity extends BlockEntity implements MenuProvider {
 
     public String getCurrentContestInfo(){
         String result = "";
-        if(isHost){
-            result += "Host: " + Minecraft.getInstance().level.getPlayerByUUID(hostId).getDisplayName().getString();
+        if (isHost) {
+            Player host = level == null ? null : level.getPlayerByUUID(hostId);
+            result += "Host: " + (host == null ? hostId : host.getDisplayName().getString());
             result += ", Type: " + contestType;
         }else {
             result += "No current host";
@@ -141,18 +141,25 @@ public class ContestBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public void runStubContest(){
-        assert Minecraft.getInstance().level != null;
-        if (!Minecraft.getInstance().level.isClientSide){
+        if (level != null && !level.isClientSide) {
             //System.out.println("Running contest");
         }
     }
 
     public void runStatAssesment(UUID id, int pokeIdx, int contestType, int contestLevel1, ServerPlayer player){
+        if (player == null || !player.getUUID().equals(id) || pokeIdx < 0 || pokeIdx > 5
+                || contestType < 0 || contestType > 4 || contestLevel1 < 0 || contestLevel1 > 4) {
+            return;
+        }
         //String contestOutput = "";
         Component componentOutput;
         Pokemon poke = Cobblemon.INSTANCE.getStorage().getParty(player).get(pokeIdx);
+        if (poke == null) {
+            player.displayClientMessage(Component.translatable("cobble_contests.error.invalid_pokemon"), false);
+            return;
+        }
         CompoundTag ribbonTag = poke.getPersistentData().getCompound("Ribbons");
-        String pokeName = poke.getDisplayName().getString();
+        String pokeName = poke.getDisplayName(false).getString();
         int contestLevel = getNextContestLevel(ribbonTag, contestType);
         if(contestLevel < 5) {
             boolean result = runContest(poke, contestType, contestLevel);
@@ -167,9 +174,8 @@ public class ContestBlockEntity extends BlockEntity implements MenuProvider {
             componentOutput = Component.translatable("cobble_contests.contest_result.maxed_ranked", pokeName, getContestTypeString(contestType)).withStyle(ChatFormatting.LIGHT_PURPLE);
             //contestOutput = pokeName + " has already beaten all " + getContestTypeString(contestType) + " Contests";
         }
-        ServerPlayer sPlayer = poke.getOwnerPlayer();
-        if (!sPlayer.level().isClientSide()) {
-            sPlayer.displayClientMessage(componentOutput, false);
+        if (!player.level().isClientSide()) {
+            player.displayClientMessage(componentOutput, false);
             //sPlayer.displayClientMessage(Component.literal(contestOutput).withStyle(ChatFormatting.LIGHT_PURPLE), false);
         }
 
@@ -267,11 +273,11 @@ public class ContestBlockEntity extends BlockEntity implements MenuProvider {
             tag.put(key, value);
         });
         // basically a vanilla "markAsDirty"
-        if (pokemon.getChangeObservable() instanceof SimpleObservable<Pokemon>) { //TODO
+        /**if (pokemon.getChangeObservable() instanceof SimpleObservable<Pokemon>) { //TODO
             ((SimpleObservable<Pokemon>) pokemon.getChangeObservable()).emit(pokemon);
         }else {
             System.out.println("error, not simple observable (ContestBlockEntity)");
-        }
+        }*/
     }
 
 

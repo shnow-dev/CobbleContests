@@ -2,16 +2,18 @@ rootProject.name = "CobbleContests"
 
 pluginManagement {
     repositories {
-        maven("https://maven.fabricmc.net/")
         maven("https://maven.architectury.dev/")
-        maven("https://maven.minecraftforge.net/")
+        maven("https://maven.fabricmc.net/") {
+            content {
+                includeGroupByRegex("net\\.fabricmc(\\..*)?")
+            }
+        }
+        maven("https://maven.neoforged.net/releases")
         gradlePluginPortal()
-        //gradlePluginPortal()
     }
 }
 
 listOf(
     "common",
-    "neoforge",
-    "fabric"
+    "neoforge"
 ).forEach { include(it)}

@@ -5,14 +5,11 @@ import com.cobblemon.mod.common.api.storage.party.PlayerPartyStore;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.raspix.neoforge.cobble_contests.pokemon.CVs;
 import com.raspix.neoforge.cobble_contests.pokemon.Ribbons;
-import io.netty.buffer.Unpooled;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.jetbrains.annotations.NotNull;
@@ -37,31 +34,25 @@ public class SBWalletScreenParty implements CustomPacketPayload {
     private final UUID id;
 
     public static void handleDataOnMain(final SBWalletScreenParty data, final IPayloadContext context) {
-        System.out.println("Recieving SBWallet");
-        PlayerPartyStore pps = null;
-        CompoundTag tag = new CompoundTag();
-        Player player = context.player();
-        try {
-            pps = Cobblemon.INSTANCE.getStorage().getParty((ServerPlayer) player);
-            List<Pokemon> poke = pps.toGappyList();
-            for(int i = 0; i < 6; i++){
-                if(poke.size() > i && poke.get(i) != null){
-                    CompoundTag pers = poke.get(i).getPersistentData();
-                    tag.put("poke" +i, pers.getCompound("CVs"));
-                    tag.put("poke" +i + "ribbons", pers.getCompound("Ribbons"));
-                }else{
-                    tag.put("poke" +i, new CVs().saveToNBT());
-                    tag.put("poke" +i + "ribbons", new Ribbons().saveToNBT());
-                }
-            }
-            if (player != null && player instanceof ServerPlayer serverPlayer) {
-                FriendlyByteBuf bufi = new FriendlyByteBuf(Unpooled.buffer());
-                bufi.writeNbt(tag);
-                PacketDistributor.sendToPlayer(serverPlayer, new CBWalletScreenParty(data.getId(), tag));
-            }
-        } catch (NullPointerException e){
-            System.out.println(e.getMessage());
+        if (!(context.player() instanceof ServerPlayer serverPlayer)
+                || !serverPlayer.getUUID().equals(data.getId())) {
+            return;
         }
+        CompoundTag tag = new CompoundTag();
+        PlayerPartyStore party = Cobblemon.INSTANCE.getStorage().getParty(serverPlayer);
+        List<Pokemon> pokemon = party.toGappyList();
+        for (int i = 0; i < 6; i++) {
+            Pokemon partyMember = i < pokemon.size() ? pokemon.get(i) : null;
+            if (partyMember != null) {
+                CompoundTag persistentData = partyMember.getPersistentData();
+                tag.put("poke" + i, persistentData.getCompound("CVs"));
+                tag.put("poke" + i + "ribbons", persistentData.getCompound("Ribbons"));
+            } else {
+                tag.put("poke" + i, new CVs().saveToNBT());
+                tag.put("poke" + i + "ribbons", new Ribbons().saveToNBT());
+            }
+        }
+        PacketDistributor.sendToPlayer(serverPlayer, new CBWalletScreenParty(serverPlayer.getUUID(), tag));
     }
 
     public UUID getId(){

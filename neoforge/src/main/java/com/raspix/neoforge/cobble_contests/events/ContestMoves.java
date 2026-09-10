@@ -2,7 +2,6 @@ package com.raspix.neoforge.cobble_contests.events;
 
 import com.google.gson.*;
 import com.raspix.common.cobble_contests.CobbleContests;
-import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;

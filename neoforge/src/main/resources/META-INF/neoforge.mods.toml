@@ -21,13 +21,13 @@ side = "BOTH"
 [[dependencies.${mod_id}]]
 modId = "neoforge"
 mandatory = true
-versionRange = "[21.1.66,)"
+versionRange = "[21.1.249,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.${mod_id}]]
 modId = "cobblemon"
 mandatory = true
-versionRange = "[1.6,)"
+versionRange = "[1.7.3,1.8)"
 ordering = "AFTER"
 side = "BOTH"

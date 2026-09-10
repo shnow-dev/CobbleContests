@@ -101,13 +101,6 @@ public class ContestBlock extends Block implements EntityBlock {
                 //PacketHandler.sendToServer(new SSendPartyPacket(player.getUUID()));
                 //System.out.println("hi1");
 
-                /**ClientPC pc = CobblemonClient.storage.pcStores[packet.storeID];
-                if(pc == null){
-                    return InteractionResult.SUCCESS;
-                }
-                MinecraftClient.getInstance().setScreen(PCGUI(pc, CobblemonClient.storage.myParty, new PCGUIConfiguration()));*/
-
-                //PCGUIConfiguration()
             }
             return InteractionResult.CONSUME;
         }

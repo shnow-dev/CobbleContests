@@ -19,6 +19,6 @@ public class MenuInit {
 
     public static final Supplier<MenuType<ContestBoothMenu>> CONTEST_MENU = MENU_TYPES.register("contest_menu", () -> IMenuTypeExtension.create(ContestBoothMenu::new));
     public static final Supplier<MenuType<PoffinPotMenu>> POFFIN_POT_MENU = MENU_TYPES.register("poffin_pot_menu", () -> IMenuTypeExtension.create(PoffinPotMenu::new));
-    public static final Supplier<MenuType<PlayerContestCardMenu>> PLAYER_CONTEST_INFO_MENU = MENU_TYPES.register("player_contest_info_menu", () -> new MenuType<>(PlayerContestCardMenu::new, FeatureFlags.DEFAULT_FLAGS));
+    public static final Supplier<MenuType<PlayerConditionCardMenu>> PLAYER_CONTEST_INFO_MENU = MENU_TYPES.register("player_contest_info_menu", () -> new MenuType<>(PlayerConditionCardMenu::new, FeatureFlags.DEFAULT_FLAGS));
 
 }

@@ -1,7 +1,5 @@
 package com.raspix.neoforge.cobble_contests.network;
 
-import com.raspix.neoforge.cobble_contests.menus.screens.PlayerConditionCardScreen;
-import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -37,16 +35,6 @@ public class CBWalletScreenParty implements CustomPacketPayload {
 
     public CompoundTag getTag(){
         return tag;
-    }
-
-    public static void handleDataOnMain(final CBWalletScreenParty data, final IPayloadContext context) {
-        System.out.println("Recieving CBWallet");
-        if(Minecraft.getInstance().screen instanceof PlayerConditionCardScreen screen){
-            //CompoundTag tag = buf.readNbt();
-            screen.setCVs(data.getTag());
-            screen.setRibbons(data.getTag());
-        }
-
     }
 
     /**public void recieve(Minecraft minecraft){

@@ -439,7 +439,8 @@ public class PoffinPotBlockEntity extends BaseContainerBlockEntity implements Wo
         put(CobblemonItems.ROSELI_BERRY, new int[]{0, 0, 25, 10, 0, 35});
         put(CobblemonItems.KEE_BERRY, new int[]{30, 30, 10, 10, 10, 50}); //does not have an actual hardness value
         put(CobblemonItems.MARANGA_BERRY, new int[]{10, 10, 30, 30, 10, 50}); //does not have an actual hardness value
-
+        put(CobblemonItems.TOUGA_BERRY, new int[]{40, 0, 0, 0, 0, 65}); //based on gen III which might need to be changed for balance
+        put(CobblemonItems.HOPO_BERRY, new int[]{0, 0, 30, 0, 30, 85}); //does not have actual flavor or hardness, based on gen III Topo berry
     }};
 
     private boolean isLit() {

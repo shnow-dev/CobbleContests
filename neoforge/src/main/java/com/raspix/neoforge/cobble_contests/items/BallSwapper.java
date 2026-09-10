@@ -85,18 +85,18 @@ public class BallSwapper extends Item implements PokemonSelectingItem {
             //in release version clear ball wand's ball
             return InteractionResultHolder.success(itemStack);
         }else {
-            serverPlayer.displayClientMessage(Component.translatable("cobble_contests.ball_swapper.same_ball", pokemon.getDisplayName().getString()).withStyle(ChatFormatting.GRAY), false);
+            serverPlayer.displayClientMessage(Component.translatable("cobble_contests.ball_swapper.same_ball", pokemon.getDisplayName(false).getString()).withStyle(ChatFormatting.GRAY), false);
         }
         return InteractionResultHolder.fail(itemStack);
     }
 
     @Override
-    public boolean canUseOnBattlePokemon(@NotNull BattlePokemon battlePokemon) {
+    public boolean canUseOnBattlePokemon(ItemStack itemstack, @NotNull BattlePokemon battlePokemon) {
         return false;
     }
 
     @Override
-    public boolean canUseOnPokemon(@NotNull Pokemon pokemon) {
+    public boolean canUseOnPokemon(ItemStack itemstack, @NotNull Pokemon pokemon) {
         return true;
     }
 
@@ -167,11 +167,11 @@ public class BallSwapper extends Item implements PokemonSelectingItem {
         PartySelectCallbacks.INSTANCE.createFromPokemon(
                 serverPlayer,
                 pokeList,
-                this::canUseOnPokemon,
+                pk -> canUseOnPokemon(itemStack, pk),
                 pk -> {
                     if (true) {
                         applyToPokemon(serverPlayer, itemStack, pk);
-                        CobblemonCriteria.INSTANCE.getPOKEMON_INTERACT().trigger(serverPlayer,
+                        CobblemonCriteria.POKEMON_INTERACT.trigger(serverPlayer,
                                 new PokemonInteractContext(
                                         pk.getSpecies().resourceIdentifier, ItemInit.BALL_SWAPPER.getId()));// Registries.ITEM.getId(itemStack.getItem())  itemStack.getItem().
                     }

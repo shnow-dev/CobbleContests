@@ -32,7 +32,7 @@ public class CobbleContestsDataProvider implements DataProvider {
 
     public void registerDefaults(){
         CobbleContestsForge.LOGGER.info("Registering Defaults");
-        this.register(CobbleContestsMoves.INSTANCE);
+        this.register(CobbleContestsMoves.INSTANCE, true);
 
 
 
@@ -57,7 +57,7 @@ public class CobbleContestsDataProvider implements DataProvider {
 
     @NotNull
     @Override
-    public <T extends DataRegistry> T register(@NotNull T registry) {
+    public <T extends DataRegistry> T register(@NotNull T registry, boolean T) {
         if (this.registries.isEmpty()) {
             //CobbleContestsForge.LOGGER.info("Note: Hello.");
         }

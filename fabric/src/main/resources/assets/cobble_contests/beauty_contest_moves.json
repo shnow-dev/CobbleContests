@@ -1,8 +1,0 @@
-{
-  "moves": [
-    {"name": "acidspray", "contestStat": "Beauty", "appeal": 2},
-    {"name": "aquaring", "contestStat": "Beauty", "appeal": 1},
-    {"name": "aquatail", "contestStat": "Beauty", "appeal": 4},
-    {"name": "aromaticmist", "contestStat": "Beauty", "appeal": 1}
-  ]
-}

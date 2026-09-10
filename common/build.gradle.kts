@@ -8,7 +8,7 @@ plugins {
 }
 
 architectury {
-    common("fabric", "neoforge")
+    common("neoforge")
     //platformSetupLoomIde()
 }
 

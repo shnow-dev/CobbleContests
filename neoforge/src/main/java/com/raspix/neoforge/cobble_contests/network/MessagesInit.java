@@ -1,6 +1,7 @@
 package com.raspix.neoforge.cobble_contests.network;
 
 import com.raspix.neoforge.cobble_contests.CobbleContestsForge;
+import com.raspix.neoforge.cobble_contests.client.ClientPayloadHandler;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -42,7 +43,7 @@ public class MessagesInit {
         registrar.playToClient( //.commonBidirectional
                 CBWalletScreenParty.PACKET_ID, CBWalletScreenParty.PACKET_CODEC,
                 new MainThreadPayloadHandler<>( //DirectionalPayloadHandler
-                        CBWalletScreenParty::handleDataOnMain
+                        ClientPayloadHandler::handleWalletParty
                 )
         );
 
