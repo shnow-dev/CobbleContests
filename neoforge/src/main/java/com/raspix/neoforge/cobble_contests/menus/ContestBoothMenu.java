@@ -3,6 +3,7 @@ package com.raspix.neoforge.cobble_contests.menus;
 import com.raspix.neoforge.cobble_contests.blocks.BlockInit;
 import com.raspix.neoforge.cobble_contests.blocks.entity.ContestBlockEntity;
 import com.raspix.neoforge.cobble_contests.network.SBRunContest;
+import com.raspix.neoforge.cobble_contests.network.SBContestAction;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -83,5 +84,9 @@ public class ContestBoothMenu extends AbstractContainerMenu {
     public void startStatAssesment(UUID player, int pokemonIdx, int contestType){
         //PacketHandler.sendToServer(new CBERunContest(player, pokemonIdx, blockEntity.getBlockPos(), contestType, 0));
         PacketDistributor.sendToServer(new SBRunContest(player, pokemonIdx, blockEntity.getBlockPos(), contestType, 0));
+    }
+
+    public void sendContestAction(UUID sessionId, int value) {
+        PacketDistributor.sendToServer(new SBContestAction(sessionId, blockEntity.getBlockPos(), value));
     }
 }

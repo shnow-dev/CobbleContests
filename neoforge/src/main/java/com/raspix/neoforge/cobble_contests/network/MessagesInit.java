@@ -22,6 +22,8 @@ public class MessagesInit {
     public static final ResourceLocation WALLET_ID_1 = ResourceLocation.fromNamespaceAndPath(CobbleContestsForge.MOD_ID, "wallet_conditions");
     public static final ResourceLocation WALLET_ID_2 = ResourceLocation.fromNamespaceAndPath(CobbleContestsForge.MOD_ID, "wallet_conditions2");
     public static final ResourceLocation RUN_CONTEST = ResourceLocation.fromNamespaceAndPath(CobbleContestsForge.MOD_ID, "run_contest");
+    public static final ResourceLocation CONTEST_ACTION = ResourceLocation.fromNamespaceAndPath(CobbleContestsForge.MOD_ID, "contest_action");
+    public static final ResourceLocation CONTEST_STATE = ResourceLocation.fromNamespaceAndPath(CobbleContestsForge.MOD_ID, "contest_state");
 
 
     //@SubscribeEvent
@@ -39,12 +41,20 @@ public class MessagesInit {
                         SBRunContest::handleDataOnMain
                 )
         );
+        registrar.playToServer(
+                SBContestAction.PACKET_ID, SBContestAction.PACKET_CODEC,
+                new MainThreadPayloadHandler<>(SBContestAction::handleDataOnMain)
+        );
 
         registrar.playToClient( //.commonBidirectional
                 CBWalletScreenParty.PACKET_ID, CBWalletScreenParty.PACKET_CODEC,
                 new MainThreadPayloadHandler<>( //DirectionalPayloadHandler
                         ClientPayloadHandler::handleWalletParty
                 )
+        );
+        registrar.playToClient(
+                CBContestState.PACKET_ID, CBContestState.PACKET_CODEC,
+                new MainThreadPayloadHandler<>(ClientPayloadHandler::handleContestState)
         );
 
     }

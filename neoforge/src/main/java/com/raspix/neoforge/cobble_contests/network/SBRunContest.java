@@ -2,7 +2,6 @@ package com.raspix.neoforge.cobble_contests.network;
 
 import com.raspix.neoforge.cobble_contests.blocks.entity.ContestBlockEntity;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -27,7 +26,6 @@ public class SBRunContest implements CustomPacketPayload {
     public static final StreamCodec<FriendlyByteBuf, SBRunContest> PACKET_CODEC = new StreamCodec<FriendlyByteBuf, SBRunContest>() {
         @Override
         public @NotNull SBRunContest decode(FriendlyByteBuf buf) {
-            CompoundTag compoundTag = new CompoundTag();
             return new SBRunContest(FriendlyByteBuf.readUUID(buf), buf.readInt(), FriendlyByteBuf.readBlockPos(buf), buf.readInt(), buf.readInt());
         }
 
@@ -99,16 +97,13 @@ public class SBRunContest implements CustomPacketPayload {
         BlockEntity blockEntity = player.serverLevel().getBlockEntity(data.pos);
         if (blockEntity instanceof ContestBlockEntity contestBlock
                 && menu.getBlockEntity() == contestBlock) {
-            contestBlock.runStatAssesment(data.id, data.index, data.contestType, data.contestLevel, player);
+            contestBlock.startContestSession(player, data.index, data.contestType);
         }
     }
 
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
-        System.out.println("HELLO");
-        System.out.println("TYPE: " + PACKET_ID);
-        System.out.println("ID: " + PACKET_ID.id());
         return PACKET_ID;
     }
 }
