@@ -9,12 +9,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 
-public class PlayerContestCardMenu extends AbstractContainerMenu {
+public class PlayerConditionCardMenu extends AbstractContainerMenu {
 
     private PlayerPartyStore playerPartyStore;
     private ContestMoves cMoves; //should be made somewhere else, but not sure where
     private ClientParty playerPartyClient;
-    public PlayerContestCardMenu(int i) {
+    public PlayerConditionCardMenu(int i) {
         super(MenuInit.PLAYER_CONTEST_INFO_MENU.get(), i);
         //playerPartyClient = CobblemonClient.INSTANCE.getStorage().getMyParty();
         /**this.playerPartyStore = playerPartyStore;
@@ -25,7 +25,7 @@ public class PlayerContestCardMenu extends AbstractContainerMenu {
         }*/
     }
 
-    public PlayerContestCardMenu(int containerID, Inventory playerInv){
+    public PlayerConditionCardMenu(int containerID, Inventory playerInv){
         super(MenuInit.PLAYER_CONTEST_INFO_MENU.get(), containerID);
         //PlayerPartyStore pps =  Cobblemon.INSTANCE.getStorage().getParty((ServerPlayer) playerInv.player);
         /**playerPartyClient = CobblemonClient.INSTANCE.getStorage().getMyParty();
@@ -37,7 +37,7 @@ public class PlayerContestCardMenu extends AbstractContainerMenu {
         //createMenu();
     }
 
-    protected PlayerContestCardMenu(int containerID, Inventory playerInv, FriendlyByteBuf additionalData) {
+    protected PlayerConditionCardMenu(int containerID, Inventory playerInv, FriendlyByteBuf additionalData) {
         this(containerID, playerInv);
     }
 
@@ -52,7 +52,7 @@ public class PlayerContestCardMenu extends AbstractContainerMenu {
 
     @Override
     public ItemStack quickMoveStack(Player arg, int i) {
-        return null;
+        return ItemStack.EMPTY;
     }
 
     @Override

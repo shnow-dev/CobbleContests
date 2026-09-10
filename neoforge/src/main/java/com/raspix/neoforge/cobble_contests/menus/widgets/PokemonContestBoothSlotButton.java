@@ -95,7 +95,7 @@ public class PokemonContestBoothSlotButton extends FixedImageButton {
 
 
 
-            drawScaledText(guiGraphics, pokemon.getDisplayName().getVisualOrderText(),
+            drawScaledText(guiGraphics, pokemon.getDisplayName(false).getVisualOrderText(),
                     (Number) (this.getX() + 32),
                     (Number) (this.getY() + 55),
                     1f, 1f, 1f, 0x00918b99, true, false);
@@ -106,27 +106,28 @@ public class PokemonContestBoothSlotButton extends FixedImageButton {
             poses.translate(this.getX() + 20 + (PORTRAIT_DIAMETER / 2.0), this.getY()+10, 0f);
             poses.pushPose();
 
-            drawProfilePokemon(pokemon.getSpecies().getResourceIdentifier(),
+            drawProfilePokemon(pokemon.asRenderablePokemon(),
                     poses,
                     new Quaternionf().rotationXYZ((float) Math.toRadians(13f), (float) Math.toRadians(35f), 0F),
                     PoseType.PROFILE,
                     new FloatingState(),
                     partials,
                     24f,
-                    true, false, 1f, 1f, 1f, 1f
+                    true, false, 1f, 1f, 1f, 1f,
+                    0f, 0f
             );
 
             poses.popPose();
             poses.translate(-(this.getX() + 20 + (PORTRAIT_DIAMETER / 2.0)), -(this.getY()+10), 0f);
 
-            if (pokemon.getGender() != Gender.GENDERLESS) {
+            /**if (pokemon.getGender() != Gender.GENDERLESS) {
              blitk(
              poses, (pokemon.getGender() == Gender.MALE)? genderIconMale : genderIconFemale,
              (getX() + 40) / halfScale, (getY() + 20) / halfScale, height = 7, width = 5,
              0, 0, 5, 7, 0, 1, 1, 1, 1, true,
              halfScale
              );
-             }
+             }*/
 
             drawScaledText(
                     guiGraphics,

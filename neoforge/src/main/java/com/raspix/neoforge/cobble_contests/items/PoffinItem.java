@@ -5,8 +5,8 @@ import com.cobblemon.mod.common.advancement.CobblemonCriteria;
 import com.cobblemon.mod.common.advancement.criterion.PokemonInteractContext;
 import com.cobblemon.mod.common.api.battles.model.PokemonBattle;
 import com.cobblemon.mod.common.api.battles.model.actor.BattleActor;
-import com.cobblemon.mod.common.api.berry.Flavor;
 import com.cobblemon.mod.common.api.callback.PartySelectCallbacks;
+import com.cobblemon.mod.common.api.cooking.Flavour;
 import com.cobblemon.mod.common.api.item.PokemonSelectingItem;
 import com.cobblemon.mod.common.api.reactive.SimpleObservable;
 import com.cobblemon.mod.common.api.storage.NoPokemonStoreException;
@@ -44,28 +44,29 @@ public class PoffinItem extends CobblemonItem implements PokemonSelectingItem {
 
     public static final String cvsKey = "CVs";
     private final String coolKey = "cool";
-    private int mainFlavor = -1;
-    private int secFlavor = -1;
+    private int mainFlavour = -1;
+    private int secFlavour = -1;
 
     public PoffinItem(Properties properties) {
         super(properties);
-        this.mainFlavor = -1;
-        this.secFlavor = -1;
+        this.mainFlavour = -1;
+        this.secFlavour = -1;
     }
 
-    public PoffinItem(Properties properties, int mainFlavor, int secFlavor) {
+    public PoffinItem(Properties properties, int mainFlavour, int secFlavour) {
         super(properties);
-        this.mainFlavor = mainFlavor;
-        this.secFlavor = secFlavor;
+        this.mainFlavour = mainFlavour;
+        this.secFlavour = secFlavour;
     }
 
-    private void setBasicFlavors(){
+    private void setBasicFlavours(){
     }
 
     @Nullable
     @Override
     public BagItem getBagItem() {
         return new BagItem() {
+
             @Override
             public @NotNull Item getReturnItem() {
                 return null;
@@ -78,7 +79,7 @@ public class PoffinItem extends CobblemonItem implements PokemonSelectingItem {
             }
 
             @Override
-            public boolean canUse(@NotNull PokemonBattle pokemonBattle, @NotNull BattlePokemon battlePokemon) {
+            public boolean canUse(@NotNull ItemStack itemStack, @NotNull PokemonBattle pokemonBattle, @NotNull BattlePokemon battlePokemon) {
                 return true;
             }
 
@@ -88,10 +89,10 @@ public class PoffinItem extends CobblemonItem implements PokemonSelectingItem {
                 return null;
             }
 
-            @Override
+            /**@Override
             public boolean canStillUse(@NotNull ServerPlayer serverPlayer, @NotNull PokemonBattle pokemonBattle, @NotNull BattleActor battleActor, @NotNull BattlePokemon battlePokemon, @NotNull ItemStack itemStack) {
                 return  itemStack.getCount() > 0 && canUse(pokemonBattle, battlePokemon) && battleActor.canFitForcedAction();
-            }
+            }*/
         };
     }
 
@@ -114,52 +115,52 @@ public class PoffinItem extends CobblemonItem implements PokemonSelectingItem {
 
         if(cvs.getSheen() < 255 || itemStack.getItem() == ItemInit.FOUL_POFFIN.get()) {
             // spicy, dry, sweet, bitter, sour, sheen
-            int[] flavors = {0, 0, 0, 0, 0, 0};
-            if(itemStack.has(DataComponents.CUSTOM_DATA) && itemStack.get(DataComponents.CUSTOM_DATA).contains("Flavors")) {
-                CompoundTag poffinTag = itemStack.get(DataComponents.CUSTOM_DATA).copyTag().getCompound("Flavors");
+            int[] Flavours = {0, 0, 0, 0, 0, 0};
+            if(itemStack.has(DataComponents.CUSTOM_DATA) && itemStack.get(DataComponents.CUSTOM_DATA).contains("Flavours")) {
+                CompoundTag poffinTag = itemStack.get(DataComponents.CUSTOM_DATA).copyTag().getCompound("Flavours");
                 try {
-                    flavors[0] = poffinTag.getInt("spicy");
-                    flavors[1] = poffinTag.getInt("dry");
-                    flavors[2] = poffinTag.getInt("sweet");
-                    flavors[3] = poffinTag.getInt("bitter");
-                    flavors[4] = poffinTag.getInt("sour");
-                    flavors[5] = poffinTag.getInt("sheen");
+                    Flavours[0] = poffinTag.getInt("spicy");
+                    Flavours[1] = poffinTag.getInt("dry");
+                    Flavours[2] = poffinTag.getInt("sweet");
+                    Flavours[3] = poffinTag.getInt("bitter");
+                    Flavours[4] = poffinTag.getInt("sour");
+                    Flavours[5] = poffinTag.getInt("sheen");
                 } catch (ClassCastException e) {
 
                 }
             }else {
-                flavors = getBaseFlavors();
+                Flavours = getBaseFlavours();
             }
             System.out.println(itemStack.getTags().toList().size());
             for(TagKey key : itemStack.getTags().toList()){
                 System.out.println(key);
             }
-            System.out.println("Applying: " + Arrays.toString(flavors));
+            System.out.println("Applying: " + Arrays.toString(Flavours));
 
             Nature nature = pokemon.getNature();
-            int disliked = getIndexFromFlavor(nature.getDislikedFlavor());
-            int liked = getIndexFromFlavor(nature.getFavoriteFlavor());
+            int disliked = getIndexFromFlavour(nature.getDislikedFlavour());
+            int liked = getIndexFromFlavour(nature.getFavouriteFlavour());
             float valMultiplier = 1.0f;
-            if(this.mainFlavor == liked && mainFlavor >= 0 && mainFlavor != secFlavor){ //liked and has 2 flavors
-                System.out.println("liked flavor");
+            if(this.mainFlavour == liked && mainFlavour >= 0 && mainFlavour != secFlavour){ //liked and has 2 Flavours
+                System.out.println("liked Flavour");
                 valMultiplier = 1.1f;
                 pokemon.incrementFriendship(5, true);
-            }else if(this.mainFlavor == disliked && mainFlavor >= 0 && mainFlavor != secFlavor){ //disliked and has 2 flavors
-                System.out.println("disliked flavor");
+            }else if(this.mainFlavour == disliked && mainFlavour >= 0 && mainFlavour != secFlavour){ //disliked and has 2 Flavours
+                System.out.println("disliked Flavour");
                 valMultiplier = 0.9f;
                 pokemon.decrementFriendship(1, true);
-            }else if(this.mainFlavor == -1 && this.secFlavor == -1){ //no flavor so foul
+            }else if(this.mainFlavour == -1 && this.secFlavour == -1){ //no Flavour so foul
                 pokemon.decrementFriendship(20, true);
             }else {
-                pokemon.incrementFriendship(1, true); //no opinion on flavor
+                pokemon.incrementFriendship(1, true); //no opinion on Flavour
             }
 
-            // need to change this so that all get buff if the primary flavor of the poffin is fav/hated
+            // need to change this so that all get buff if the primary Flavour of the poffin is fav/hated
             for (int i = 0; i < 5; i++) {
-                int valBonus = (int) ((float)flavors[i] * valMultiplier);
+                int valBonus = (int) ((float)Flavours[i] * valMultiplier);
                 cvs.increaseCVFromFlavorIndex(i, valBonus);
             }
-            cvs.increaseSheen(flavors[5]);
+            cvs.increaseSheen(Flavours[5]);
 
             Map<String, CompoundTag> myData = new HashMap<String, CompoundTag>() {};
             myData.put(cvsKey, cvs.saveToNBT());
@@ -170,7 +171,7 @@ public class PoffinItem extends CobblemonItem implements PokemonSelectingItem {
             }
             return InteractionResultHolder.success(itemStack);
         }else {
-            serverPlayer.displayClientMessage(Component.literal(pokemon.getDisplayName().getString() + " already has max sheen and can not eat any more").withStyle(ChatFormatting.LIGHT_PURPLE), false);
+            serverPlayer.displayClientMessage(Component.literal(pokemon.getDisplayName(false).getString() + " already has max sheen and can not eat any more").withStyle(ChatFormatting.LIGHT_PURPLE), false);
         }
         return InteractionResultHolder.fail(itemStack);
     }
@@ -182,11 +183,11 @@ public class PoffinItem extends CobblemonItem implements PokemonSelectingItem {
             tag.put(key, IntTag.valueOf(value));
         });
         // basically a vanilla "markAsDirty"
-        if (pokemon.getChangeObservable() instanceof SimpleObservable<Pokemon>) { //TODO
+        /**if (pokemon.getChangeObservable() instanceof SimpleObservable<Pokemon>) { //TODO
             ((SimpleObservable<Pokemon>) pokemon.getChangeObservable()).emit(pokemon);
         }else {
             System.out.println("error, not simple observable (PoffinItem)");
-        }
+        }*/
     }
 
     private void saveCVs(final Pokemon pokemon, final Map<String, CompoundTag> myData) {
@@ -195,21 +196,21 @@ public class PoffinItem extends CobblemonItem implements PokemonSelectingItem {
             tag.put(key, value);
         });
         // basically a vanilla "markAsDirty"
-        if (pokemon.getChangeObservable() instanceof SimpleObservable<Pokemon>) { //TODO
+        /**if (pokemon.getChangeObservable() instanceof SimpleObservable<Pokemon>) { //TODO
             ((SimpleObservable<Pokemon>) pokemon.getChangeObservable()).emit(pokemon);
         }else {
             System.out.println("error, not simple observable (PoffinItem)");
-        }
+        }*/
     }
 
     private void getMyData(Pokemon pokemon, String key){
 
     }
 
-    private int getIndexFromFlavor(Flavor flavor){
+    private int getIndexFromFlavour(Flavour Flavour){
         int idx = -1;
-        if(flavor != null){
-            switch (flavor) {
+        if(Flavour != null){
+            switch (Flavour) {
                 case SPICY:
                     idx = 0;
                     break;
@@ -226,7 +227,7 @@ public class PoffinItem extends CobblemonItem implements PokemonSelectingItem {
                     idx = 4;
                     break;
                 default:
-                    System.out.println("Unknown flavor.");
+                    System.out.println("Unknown Flavour.");
                     break;
             }
         }
@@ -235,12 +236,12 @@ public class PoffinItem extends CobblemonItem implements PokemonSelectingItem {
 
 
     @Override
-    public boolean canUseOnBattlePokemon(@NotNull BattlePokemon battlePokemon) {
+    public boolean canUseOnBattlePokemon(ItemStack itemstack, @NotNull BattlePokemon battlePokemon) {
         return false;
     }
 
     @Override
-    public boolean canUseOnPokemon(@NotNull Pokemon pokemon) {
+    public boolean canUseOnPokemon(ItemStack itemstack, @NotNull Pokemon pokemon) {
         return true;
     }
 
@@ -301,11 +302,11 @@ public class PoffinItem extends CobblemonItem implements PokemonSelectingItem {
         PartySelectCallbacks.INSTANCE.createFromPokemon(
                 serverPlayer,
                 pokeList,
-                this::canUseOnPokemon,
+                pk -> canUseOnPokemon(itemStack, pk),
                 pk -> {
                     if (true) {
                         applyToPokemon(serverPlayer, itemStack, pk);
-                        CobblemonCriteria.INSTANCE.getPOKEMON_INTERACT().trigger(serverPlayer,
+                        CobblemonCriteria.POKEMON_INTERACT.trigger(serverPlayer,
                                 new PokemonInteractContext(
                                         pk.getSpecies().resourceIdentifier, ItemInit.POFFIN_DOUGH_BASE.getId()));// Registries.ITEM.getId(itemStack.getItem())  itemStack.getItem().
                     }
@@ -318,8 +319,8 @@ public class PoffinItem extends CobblemonItem implements PokemonSelectingItem {
     @Override
     public void appendHoverText(ItemStack itemStack, TooltipContext tooltipContext, List<Component> list, TooltipFlag tooltipFlag) {
         super.appendHoverText(itemStack, tooltipContext, list, tooltipFlag);
-        if(itemStack.has(DataComponents.CUSTOM_DATA) && itemStack.get(DataComponents.CUSTOM_DATA).contains("Flavors")) {
-            CompoundTag poffinTag = itemStack.get(DataComponents.CUSTOM_DATA).copyTag().getCompound("Flavors");
+        if(itemStack.has(DataComponents.CUSTOM_DATA) && itemStack.get(DataComponents.CUSTOM_DATA).contains("Flavours")) {
+            CompoundTag poffinTag = itemStack.get(DataComponents.CUSTOM_DATA).copyTag().getCompound("Flavours");
             try {
                 int spicy = poffinTag.getInt("spicy");
                 int dry = poffinTag.getInt("dry");
@@ -331,8 +332,8 @@ public class PoffinItem extends CobblemonItem implements PokemonSelectingItem {
             } catch (ClassCastException e) {
             }
         }else {
-            int[] baseFlavors = getBaseFlavors();
-            list.add(Component.translatable("tooltip.cobble_contests.poffin_item.tooltip.poffin_stats", baseFlavors[0], baseFlavors[1], baseFlavors[2], baseFlavors[3], baseFlavors[4], baseFlavors[5]).withStyle(ChatFormatting.ITALIC).withStyle(ChatFormatting.LIGHT_PURPLE));
+            int[] baseFlavours = getBaseFlavours();
+            list.add(Component.translatable("tooltip.cobble_contests.poffin_item.tooltip.poffin_stats", baseFlavours[0], baseFlavours[1], baseFlavours[2], baseFlavours[3], baseFlavours[4], baseFlavours[5]).withStyle(ChatFormatting.ITALIC).withStyle(ChatFormatting.LIGHT_PURPLE));
         }
     }
 
@@ -340,19 +341,19 @@ public class PoffinItem extends CobblemonItem implements PokemonSelectingItem {
      * For poffins that were not assigned data, like those in creative
      * @return
      */
-    private int[] getBaseFlavors(){
-        int[] baseFlavors = {0, 0, 0, 0, 0, 20};
-        if(mainFlavor >= 0 && mainFlavor <6 && secFlavor == -1){ // only one flavor
-            baseFlavors[mainFlavor] = 15;
-        }else if(mainFlavor >= 0 && mainFlavor <6){ //main flavor with sec
-            baseFlavors[mainFlavor] = 10;
+    private int[] getBaseFlavours(){
+        int[] baseFlavours = {0, 0, 0, 0, 0, 20};
+        if(mainFlavour >= 0 && mainFlavour <6 && secFlavour == -1){ // only one Flavour
+            baseFlavours[mainFlavour] = 15;
+        }else if(mainFlavour >= 0 && mainFlavour <6){ //main Flavour with sec
+            baseFlavours[mainFlavour] = 10;
         }
-        if(secFlavor >= 0 && secFlavor <6){ //sec flavor
-            baseFlavors[secFlavor] = 5;
+        if(secFlavour >= 0 && secFlavour <6){ //sec Flavour
+            baseFlavours[secFlavour] = 5;
         }
-        if(mainFlavor == -1 && secFlavor == -1){ //foul
-            baseFlavors = new int[]{-10, -10, -10, -10, -10, -30};
+        if(mainFlavour == -1 && secFlavour == -1){ //foul
+            baseFlavours = new int[]{-10, -10, -10, -10, -10, -30};
         }
-        return baseFlavors;
+        return baseFlavours;
     }
 }

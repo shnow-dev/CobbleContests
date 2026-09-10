@@ -15,12 +15,9 @@ loom {
 }
 
 repositories {
-    mavenCentral()
-    maven("https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/")
-    maven("https://maven.impactdev.net/repository/development/")
-    maven("https://hub.spigotmc.org/nexus/content/groups/public/")
-    maven("https://thedarkcolour.github.io/KotlinForForge/")
-    maven("https://maven.neoforged.net")
+    maven("https://maven.impactdev.net/repository/development/") {
+        content { includeGroup("com.cobblemon") }
+    }
 }
 
 val shadowBundle = configurations.create("shadowBundle") {
@@ -34,6 +31,7 @@ dependencies {
     neoForge("net.neoforged:neoforge:${property("neoforge_version")}")
 
     modImplementation("com.cobblemon:neoforge:${property("cobblemon_version")}") { isTransitive = false }
+    compileOnly("org.jetbrains.kotlin:kotlin-stdlib:${property("kotlin_version")}")
     //Needed for cobblemon
     forgeRuntimeLibrary("thedarkcolour:kotlinforforge-neoforge:${property("kotlin_for_forge_version")}") {
         exclude("net.neoforged.fancymodloader", "loader")
@@ -43,7 +41,7 @@ dependencies {
     "developmentNeoForge"(project(":common", configuration = "namedElements")) {
         isTransitive = false
     }
-    shadowBundle(project(":common", configuration = "transformProductionFabric"))
+    shadowBundle(project(":common", configuration = "transformProductionNeoForge"))
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:${property("junit_version")}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${property("junit_version")}")

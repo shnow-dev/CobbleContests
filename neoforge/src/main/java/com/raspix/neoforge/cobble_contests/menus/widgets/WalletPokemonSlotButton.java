@@ -57,7 +57,7 @@ public class WalletPokemonSlotButton extends FixedImageButton {
         if (pokemon != null) {
             float halfScale = 0.5f;
             PoseStack poses = guiGraphics.pose();
-            drawScaledText(guiGraphics, pokemon.getDisplayName().getVisualOrderText(),
+            drawScaledText(guiGraphics, pokemon.getDisplayName(false).getVisualOrderText(),
                     (Number) (this.getX() + 4),
                     (Number) (this.getY() + 20),
                     0.5f, 0.5f, 1f, 0x00FFFFFF, false, false);
@@ -69,14 +69,15 @@ public class WalletPokemonSlotButton extends FixedImageButton {
              null, 2.42f, 12f);*/
 
             drawProfilePokemon(
-                    pokemon.getSpecies().getResourceIdentifier(),
+                    pokemon.asRenderablePokemon(),
                     poses,
                     new Quaternionf().rotationXYZ((float) Math.toRadians(13f), (float) Math.toRadians(35f), 0F),
                     PoseType.PROFILE,
                     new FloatingState(),
                     partials,
                     12f,
-                    true, false, 1f, 1f, 1f, 1f
+                    true, false, 1f, 1f, 1f, 1f,
+                    0f, 0f
             );
 
             poses.popPose();

@@ -1,9 +1,7 @@
 plugins {
     id("java")
     id("java-library")
-    kotlin("jvm") version("1.9.23")
-
-    id("dev.architectury.loom") version("1.7-SNAPSHOT") apply false
+    id("dev.architectury.loom") version("1.11-SNAPSHOT") apply false
     id("architectury-plugin") version("3.4-SNAPSHOT") apply false
 }
 
@@ -13,7 +11,6 @@ base {
 
 allprojects {
     apply(plugin = "java")
-    apply(plugin = "org.jetbrains.kotlin.jvm")
 
     //group = "com.raspix.cobble_contests"
     //version = "1.0.2"
@@ -22,10 +19,19 @@ allprojects {
 
     repositories {
         mavenCentral()
-        maven("https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/")
-        maven("https://maven.impactdev.net/repository/development/")
-        maven("https://maven.neoforged.net/releases")
-        maven("https://thedarkcolour.github.io/KotlinForForge/")
+        maven("https://maven.impactdev.net/repository/development/") {
+            content { includeGroup("com.cobblemon") }
+        }
+        maven("https://maven.neoforged.net/releases") {
+            content {
+                includeGroupByRegex("net\\.neoforged(\\..*)?")
+                includeGroup("cpw.mods")
+                includeGroupByRegex("net\\.minecraftforge(\\..*)?")
+            }
+        }
+        maven("https://thedarkcolour.github.io/KotlinForForge/") {
+            content { includeGroup("thedarkcolour") }
+        }
     }
 
     tasks.getByName<Test>("test") {
@@ -33,8 +39,8 @@ allprojects {
     }
 
     java {
+        toolchain.languageVersion.set(JavaLanguageVersion.of(21))
         withSourcesJar()
     }
 
 }
-

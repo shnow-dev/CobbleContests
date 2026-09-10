@@ -6,12 +6,7 @@ import com.raspix.neoforge.cobble_contests.blocks.entity.BlockEntityInit;
 import com.raspix.neoforge.cobble_contests.events.JsonLoadMoves;
 import com.raspix.neoforge.cobble_contests.items.ItemInit;
 import com.raspix.neoforge.cobble_contests.menus.MenuInit;
-import com.raspix.neoforge.cobble_contests.menus.screens.ContestBoothScreen;
-import com.raspix.neoforge.cobble_contests.menus.screens.PlayerConditionCardScreen;
-import com.raspix.neoforge.cobble_contests.menus.screens.PoffinPotScreen;
 import com.raspix.neoforge.cobble_contests.network.MessagesInit;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.CreativeModeTab;
 //import net.minecraftforge.api.distmarker.Dist;
@@ -29,15 +24,11 @@ import net.minecraft.world.item.CreativeModeTab;
 //import org.slf4j.Logger;
 //import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
@@ -86,8 +77,6 @@ public class CobbleContestsForge {
     public CobbleContestsForge(IEventBus modEventBus, ModContainer modContainer){
         //CobbleContests.init();
 
-        NeoForge.EVENT_BUS.register(this);
-
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::initialize);
@@ -102,7 +91,6 @@ public class CobbleContestsForge {
         MenuInit.MENU_TYPES.register(modEventBus);
         NeoForge.EVENT_BUS.register(this);
         modEventBus.addListener(this::addCreative);
-        modEventBus.addListener(this::registerScreens);
         modEventBus.addListener(this::registerPayloads);
         //modEventBus.addListener();
         //ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
@@ -152,48 +140,12 @@ public class CobbleContestsForge {
     }*/
 
 
-    @EventBusSubscriber(modid = CobbleContestsForge.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
-    public class ClientEventBusSubscriber {
-        @SubscribeEvent
-        public static void clientSetup(FMLClientSetupEvent event) {
-            ItemBlockRenderTypes.setRenderLayer((BlockInit.CONTEST_BOOTH.get()), RenderType.translucent());
-        }
-    }
-
-    // Event is listened to on the mod event bus
-    private void registerScreens(RegisterMenuScreensEvent event) {
-        event.register(MenuInit.CONTEST_MENU.get(), ContestBoothScreen::new);
-        event.register(MenuInit.PLAYER_CONTEST_INFO_MENU.get(), PlayerConditionCardScreen::new);
-        event.register(MenuInit.POFFIN_POT_MENU.get(), PoffinPotScreen::new);
-    }
-
     public void registerPayloads(final RegisterPayloadHandlersEvent event) {
         //CobbleContestsForge.LOGGER.info("Registering Messages XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
         //System.out.println("HELLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLllO registerPayloads");
         MessagesInit.register(event);
     }
 
-
-    @EventBusSubscriber(modid = MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
-    public static class ClientModEvents{
-
-        private ClientModEvents(){}
-
-
-        @SubscribeEvent
-        public static void clientSetUp(FMLClientSetupEvent event){
-            event.enqueueWork(()-> {
-                //MenuScreens.register(MenuInit.CONTEST_MENU.get(), SecondTestScreen::new);
-                //MenuScreens.register(MenuInit.PLAYER_CONTEST_INFO_MENU.get(), PlayerContestInfoScreen::new);
-                //MenuScreens.register(MenuInit.POFFIN_POT_MENU.get(), PoffinPotScreen::new);
-
-            });
-
-
-
-        }
-
-    }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
 

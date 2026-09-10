@@ -39,7 +39,7 @@ public class ContestBoothMenu extends AbstractContainerMenu {
         //try {
             UUID id = playerInv.player.getUUID();
             //playerPartyStore = Cobblemon.INSTANCE.getStorage().getParty(id);
-            playerPartyClient = CobblemonClient.INSTANCE.getStorage().getMyParty();
+            playerPartyClient = CobblemonClient.INSTANCE.getStorage().getParty();
         /**}catch (NoPokemonStoreException e){
             System.out.println("you failed");
         }*/
@@ -62,7 +62,7 @@ public class ContestBoothMenu extends AbstractContainerMenu {
 
     @Override
     public ItemStack quickMoveStack(Player arg, int i) {
-        return null;
+        return ItemStack.EMPTY;
     }
 
     @Override
@@ -70,9 +70,9 @@ public class ContestBoothMenu extends AbstractContainerMenu {
         return stillValid(this.levelAccess, player, BlockInit.CONTEST_BOOTH.get());
     }
 
-    /**public ContestBlockEntity getBlockEntity() {
+    public ContestBlockEntity getBlockEntity() {
         return blockEntity;
-    }*/
+    }
 
     public boolean playerStartHosting(UUID id){
         return this.blockEntity.tryHosting(id);

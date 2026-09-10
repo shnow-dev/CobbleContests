@@ -71,7 +71,7 @@ public class ContestBoothScreen extends AbstractContainerScreen<ContestBoothMenu
         pokemonIndex = 0;
         pageIndex = 0;
         colorIndex = -1;
-        clientParty = CobblemonClient.INSTANCE.getStorage().getMyParty();
+        clientParty = CobblemonClient.INSTANCE.getStorage().getParty();
         playerID = playerInv.player.getUUID();
 
         createHomeButtons();
@@ -171,7 +171,7 @@ public class ContestBoothScreen extends AbstractContainerScreen<ContestBoothMenu
                     (Number) (this.leftPos + 144),
                     (Number) (this.topPos + 145),
                     1f, 1f, 1f, 0x00918b99, true, false);
-            drawScaledText(guiGraphics, Component.literal("Pokemon: " + clientParty.get(pokemonIndex).getDisplayName().getString()).getVisualOrderText(),
+            drawScaledText(guiGraphics, Component.literal("Pokemon: " + clientParty.get(pokemonIndex).getDisplayName(false).getString()).getVisualOrderText(),
                     (Number) (this.leftPos + 40),
                     (Number) (this.topPos + 50),
                     1f, 1f, 1f, 0x00918b99, false, false);
