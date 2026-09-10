@@ -26,16 +26,18 @@ class ContestSessionTest {
         assertTrue(session.act(0, 5L));
         assertTrue(session.act(1, 10L));
         assertTrue(session.act(2, 15L));
+        assertEquals(ContestPhase.EVALUATION, session.phase());
+        assertTrue(session.tick(56L));
         assertEquals(ContestPhase.CAPABILITIES, session.phase());
         assertEquals(80, session.phaseScores()[ContestPhase.EVALUATION.ordinal()]);
 
-        assertTrue(session.act(0, 20L));
-        assertTrue(session.act(2, 21L));
-        assertTrue(session.act(1, 22L));
+        assertTrue(session.act(0, 60L));
+        assertTrue(session.act(2, 61L));
+        assertTrue(session.act(1, 62L));
         assertEquals(ContestPhase.CATEGORY, session.phase());
 
         CoolPrecisionChallenge challenge = new CoolPrecisionChallenge(99L);
-        long tick = 23L;
+        long tick = 63L;
         for (int index = 0; index < CoolPrecisionChallenge.TARGET_COUNT; index++) {
             if (challenge.targetAt(index) != CoolPrecisionChallenge.TargetType.DECOY) {
                 assertTrue(session.act(index, tick++));
@@ -61,6 +63,8 @@ class ContestSessionTest {
         );
 
         assertTrue(session.tick(301L));
+        assertEquals(ContestPhase.EVALUATION, session.phase());
+        assertTrue(session.tick(342L));
         assertEquals(ContestPhase.CAPABILITIES, session.phase());
     }
 }

@@ -24,8 +24,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
-import static com.cobblemon.mod.common.client.render.RenderHelperKt.drawScaledText;
-
 @OnlyIn(Dist.CLIENT)
 public class ContestBoothScreen extends AbstractContainerScreen<ContestBoothMenu> {
     private static final int STARTING_PAGE = 0;
@@ -134,7 +132,13 @@ public class ContestBoothScreen extends AbstractContainerScreen<ContestBoothMenu
             button.active = false;
         }
         contestButtons = new ArrayList<>();
-        if (contestState == null || contestState.finished()) {
+        if (contestState == null) {
+            return;
+        }
+        if (contestState.finished()) {
+            addContestButton(Button.builder(
+                    Component.translatable("cobble_contests.action.close"), button -> onClose()
+            ).bounds(leftPos + 104, topPos + 195, 80, 20).build());
             return;
         }
 
@@ -232,8 +236,12 @@ public class ContestBoothScreen extends AbstractContainerScreen<ContestBoothMenu
             return;
         }
         menu.startStatAssesment(playerId, pokemonIndex, colorIndex);
-        for (Button button : waitButtons) {
-            button.active = false;
+        if (colorIndex == 0) {
+            for (Button button : waitButtons) {
+                button.active = false;
+            }
+        } else {
+            setPageIndex(STARTING_PAGE);
         }
     }
 
@@ -294,8 +302,8 @@ public class ContestBoothScreen extends AbstractContainerScreen<ContestBoothMenu
         int[][] positions = {{143, 78}, {220, 106}, {184, 184}, {104, 184}, {68, 106}};
         for (int index = 0; index < keys.length; index++) {
             Component label = Component.translatable("cobble_contests.contest_type." + keys[index]);
-            drawScaledText(graphics, label.getVisualOrderText(), leftPos + positions[index][0],
-                    topPos + positions[index][1], 1F, 1F, 1F, 0x00918B99, true, false);
+            graphics.drawCenteredString(font, label, leftPos + positions[index][0],
+                    topPos + positions[index][1], 0x918B99);
         }
     }
 
@@ -368,13 +376,13 @@ public class ContestBoothScreen extends AbstractContainerScreen<ContestBoothMenu
         for (int index = 0; index < scores.length; index++) {
             graphics.drawString(font, Component.translatable("cobble_contests.contest_result.phase_line",
                             Component.translatable(phaseKey(phases[index])), scores[index], phases[index].weight()),
-                    leftPos + 42, topPos + 48 + index * 20, 0xFFFFFF, false);
+                    leftPos + 42, topPos + 48 + index * 18, 0xFFFFFF, false);
         }
         drawCentered(graphics, Component.translatable("cobble_contests.contest_result.total",
-                contestState.totalScore(), contestState.requiredScore()), 178, 0xFFD966);
+                contestState.totalScore(), contestState.requiredScore()), 165, 0xFFD966);
         if (contestState.won()) {
             drawCentered(graphics, Component.translatable("cobble_contests.contest_result.ribbon_awarded"),
-                    198, 0xDFA9FF);
+                    179, 0xDFA9FF);
         }
     }
 

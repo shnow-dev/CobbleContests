@@ -25,7 +25,7 @@ jobs:
         shell: bash
         run: |
           for attempt in 1 2 3; do
-            if gradle --no-daemon --stacktrace :neoforge:build; then
+            if gradle --no-daemon --stacktrace :common:test :neoforge:build; then
               exit 0
             fi
             if (( attempt == 3 )); then

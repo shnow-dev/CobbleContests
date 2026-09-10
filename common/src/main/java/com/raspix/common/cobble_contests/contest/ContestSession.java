@@ -15,6 +15,7 @@ public final class ContestSession {
     public static final int RHYTHM_ACTIONS = 5;
 
     private static final long PRESENTATION_DURATION = 20L * 15L;
+    private static final long EVALUATION_DURATION = 20L * 2L;
     private static final long CAPABILITIES_DURATION = 20L * 20L;
     private static final long CATEGORY_DURATION = 20L * 20L;
     private static final long RHYTHM_DURATION = 20L * 15L;
@@ -168,14 +169,13 @@ public final class ContestSession {
             case FINALE, RESULTS -> ContestPhase.RESULTS;
         };
         beginPhase(next, gameTime);
-        if (next == ContestPhase.EVALUATION) {
-            scores.set(ContestPhase.EVALUATION, evaluationScore);
-            beginPhase(ContestPhase.CAPABILITIES, gameTime);
-        }
     }
 
     private void beginPhase(ContestPhase next, long gameTime) {
         phase = next;
+        if (phase == ContestPhase.EVALUATION) {
+            scores.set(ContestPhase.EVALUATION, evaluationScore);
+        }
         phaseStartedAt = gameTime;
         progress = 0;
         accumulatedScore = 0;
@@ -187,7 +187,8 @@ public final class ContestSession {
             case CATEGORY -> gameTime + CATEGORY_DURATION;
             case RHYTHM -> gameTime + RHYTHM_DURATION;
             case FINALE -> gameTime + FINALE_DURATION;
-            case EVALUATION, RESULTS -> gameTime;
+            case EVALUATION -> gameTime + EVALUATION_DURATION;
+            case RESULTS -> gameTime;
         };
         stateVersion++;
     }

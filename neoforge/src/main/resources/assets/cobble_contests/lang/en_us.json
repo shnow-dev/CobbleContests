@@ -76,6 +76,7 @@
   "cobble_contests.action.present": "Present!",
   "cobble_contests.action.rhythm": "Perform!",
   "cobble_contests.action.finale": "Final pose!",
+  "cobble_contests.action.close": "Close",
   "cobble_contests.target.decoy": "Pokémon",
   "cobble_contests.contest.rank": "Rank: %1$s",
   "cobble_contests.contest.timer": "Time: %1$ss",
