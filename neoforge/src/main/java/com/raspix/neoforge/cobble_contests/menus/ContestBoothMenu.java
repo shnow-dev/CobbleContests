@@ -1,9 +1,5 @@
 package com.raspix.neoforge.cobble_contests.menus;
 
-import com.cobblemon.mod.common.api.storage.party.PlayerPartyStore;
-import com.cobblemon.mod.common.client.CobblemonClient;
-import com.cobblemon.mod.common.client.storage.ClientParty;
-
 import com.raspix.neoforge.cobble_contests.blocks.BlockInit;
 import com.raspix.neoforge.cobble_contests.blocks.entity.ContestBlockEntity;
 import com.raspix.neoforge.cobble_contests.network.SBRunContest;
@@ -22,8 +18,6 @@ public class ContestBoothMenu extends AbstractContainerMenu {
 
     private final ContestBlockEntity blockEntity;
     private final ContainerLevelAccess levelAccess;
-    private PlayerPartyStore playerPartyStore;
-    private ClientParty playerPartyClient;
 
     //server constructor
     public ContestBoothMenu(int containerID, Inventory playerInv, BlockEntity blockEntity){
@@ -32,17 +26,9 @@ public class ContestBoothMenu extends AbstractContainerMenu {
             this.blockEntity = be;
         }else {
             throw new IllegalStateException("Incorrect block entity class (%s) passed into ContestMenu"
-                    .formatted(blockEntity.getClass().getCanonicalName()));
+                    .formatted(blockEntity == null ? "null" : blockEntity.getClass().getCanonicalName()));
         }
         this.levelAccess = ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos());
-
-        //try {
-            UUID id = playerInv.player.getUUID();
-            //playerPartyStore = Cobblemon.INSTANCE.getStorage().getParty(id);
-            playerPartyClient = CobblemonClient.INSTANCE.getStorage().getParty();
-        /**}catch (NoPokemonStoreException e){
-            System.out.println("you failed");
-        }*/
 
 
         //System.out.println("hewwo");
@@ -80,14 +66,6 @@ public class ContestBoothMenu extends AbstractContainerMenu {
 
     public boolean hostSelectType(UUID id, int type){
         return this.blockEntity.setContestType(id, type);
-    }
-
-    public PlayerPartyStore getPartyStore(){
-        return playerPartyStore;
-    }
-
-    public ClientParty getPartyClient(){
-        return playerPartyClient;
     }
 
     public void startContest(int color, int pokemonIdx, UUID player){
