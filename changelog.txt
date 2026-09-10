@@ -1,3 +1,10 @@
+Cobble Contests 0.2.0 (NeoForge)
+-Adds the permanent six-phase contest engine and approved weighted scoring
+-Adds the interactive Cool / Sang-froid precision challenge
+-Moves contest timing, validation, scores, and ribbon awards to the server
+-Adds detailed contest results and French translations
+-Keeps Beauty, Cute, Smart, and Tough on their existing stat checks until 0.3.0
+
 Cobble Contests 1.0.2 (Fabric + Neoforge)
 Updated for Cobblemon 1.6
 -Fixed some bugs with contest card and contest booth that caused crashing on single and multiplayer

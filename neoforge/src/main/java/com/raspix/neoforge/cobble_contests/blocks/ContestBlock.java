@@ -20,6 +20,8 @@ import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -52,6 +54,18 @@ public class ContestBlock extends Block implements EntityBlock {
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state){
         this.registerDefaultState(this.stateDefinition.any().setValue(PART, true));
         return BlockEntityInit.CONTEST_BLOCK_ENTITY.get().create(pos, state);
+    }
+
+    @Nullable
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
+                                                                  BlockEntityType<T> type) {
+        if (level.isClientSide || type != BlockEntityInit.CONTEST_BLOCK_ENTITY.get()) {
+            return null;
+        }
+        return (tickLevel, tickPos, tickState, blockEntity) ->
+                ContestBlockEntity.serverTick(tickLevel, tickPos, tickState,
+                        (ContestBlockEntity) blockEntity);
     }
 
 
