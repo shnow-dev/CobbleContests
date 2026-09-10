@@ -15,7 +15,7 @@ class ContestScoreTest {
         score.set(ContestPhase.RHYTHM, 70);
         score.set(ContestPhase.FINALE, 100);
 
-        assertEquals(81, score.total());
+        assertEquals(87, score.total());
     }
 
     @Test

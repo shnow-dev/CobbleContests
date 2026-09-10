@@ -3,6 +3,7 @@ package com.raspix.neoforge.cobble_contests.blocks.entity;
 import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.api.moves.Move;
 import com.cobblemon.mod.common.pokemon.Pokemon;
+import com.raspix.common.cobble_contests.contest.ContestEvaluation;
 import com.raspix.common.cobble_contests.contest.ContestSession;
 import com.raspix.neoforge.cobble_contests.CobbleContestsForge;
 import com.raspix.neoforge.cobble_contests.CobbleContestsMoves;
@@ -155,7 +156,7 @@ public class ContestBlockEntity extends BlockEntity implements MenuProvider {
         }
 
         CVs stats = CVs.getFromTag(pokemon.getPersistentData().getCompound("CVs"));
-        int evaluationScore = Math.round(stats.getCool() * 100.0F / 255.0F);
+        int evaluationScore = ContestEvaluation.scoreForCondition(stats.getCool());
         List<ContestSession.MoveOption> moves = createMoveOptions(pokemon, COOL_CATEGORY);
         long gameTime = level.getGameTime();
         ContestSession session = new ContestSession(

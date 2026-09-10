@@ -1,5 +1,6 @@
 Cobble Contests 0.2.0 (NeoForge)
 -Adds the permanent six-phase contest engine and approved weighted scoring
+-Makes Evaluation 40% of the final score with a stricter quadratic condition curve
 -Adds the interactive Cool / Sang-froid precision challenge
 -Moves contest timing, validation, scores, and ribbon awards to the server
 -Adds detailed contest results and French translations

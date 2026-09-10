@@ -6,10 +6,10 @@ package com.raspix.common.cobble_contests.contest;
  */
 public enum ContestPhase {
     PRESENTATION(5),
-    EVALUATION(20),
-    CAPABILITIES(25),
-    CATEGORY(25),
-    RHYTHM(20),
+    EVALUATION(40),
+    CAPABILITIES(15),
+    CATEGORY(20),
+    RHYTHM(15),
     FINALE(5),
     RESULTS(0);
 
