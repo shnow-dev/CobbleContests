@@ -41,7 +41,6 @@ public class ContestBlockEntity extends BlockEntity implements MenuProvider {
     private static final Component TITLE = Component.translatable(
             "container." + CobbleContestsForge.MOD_ID + ".contest_block"
     );
-    private static final int COOL_CATEGORY = 0;
     private static final int[] REQUIRED_SCORES = {50, 55, 60, 65, 70};
 
     private boolean isHost;
@@ -125,10 +124,13 @@ public class ContestBlockEntity extends BlockEntity implements MenuProvider {
                 + ", Type: " + contestType;
     }
 
-    /** Starts the interactive 0.2 contest, deriving every sensitive value on the server. */
+    /** Starts an interactive contest, deriving every sensitive value on the server. */
     public void startContestSession(ServerPlayer player, int pokemonIndex, int requestedType) {
         if (level == null || level.isClientSide || pokemonIndex < 0 || pokemonIndex > 5
                 || requestedType < 0 || requestedType > 4) {
+            return;
+        }
+        if (activeContests.containsKey(player.getUUID())) {
             return;
         }
 
@@ -138,29 +140,30 @@ public class ContestBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
 
-        // The other four categories keep their original stat contest until their
-        // definitive category challenges arrive in 0.3.0.
-        if (requestedType != COOL_CATEGORY) {
-            runLegacyStatContest(pokemon, requestedType, player);
-            return;
-        }
-
         Ribbons ribbons = Ribbons.getFromTag(pokemon.getPersistentData().getCompound("Ribbons"));
-        int rank = ribbons.getNextContestLevel(COOL_CATEGORY);
+        int rank = ribbons.getNextContestLevel(requestedType);
         if (rank >= REQUIRED_SCORES.length) {
             player.displayClientMessage(Component.translatable(
                     "cobble_contests.contest_result.maxed_ranked",
-                    pokemon.getDisplayName(false).getString(), getContestTypeString(COOL_CATEGORY)
+                    pokemon.getDisplayName(false).getString(), getContestTypeString(requestedType)
             ).withStyle(ChatFormatting.LIGHT_PURPLE), false);
             return;
         }
 
         CVs stats = CVs.getFromTag(pokemon.getPersistentData().getCompound("CVs"));
-        int evaluationScore = ContestEvaluation.scoreForCondition(stats.getCool());
-        List<ContestSession.MoveOption> moves = createMoveOptions(pokemon, COOL_CATEGORY);
+        int condition = switch (requestedType) {
+            case ContestSession.COOL_CATEGORY -> stats.getCool();
+            case ContestSession.BEAUTY_CATEGORY -> stats.getBeauty();
+            case ContestSession.GRACE_CATEGORY -> stats.getCute();
+            case ContestSession.SMART_CATEGORY -> stats.getSmart();
+            case ContestSession.TOUGH_CATEGORY -> stats.getTough();
+            default -> 0;
+        };
+        int evaluationScore = ContestEvaluation.scoreForCondition(condition);
+        List<ContestSession.MoveOption> moves = createMoveOptions(pokemon, requestedType);
         long gameTime = level.getGameTime();
         ContestSession session = new ContestSession(
-                player.getUUID(), pokemonIndex, COOL_CATEGORY, rank, evaluationScore,
+                player.getUUID(), pokemonIndex, requestedType, rank, evaluationScore,
                 moves, level.getRandom().nextLong(), gameTime
         );
         activeContests.put(player.getUUID(), new ActiveContest(session, pokemon));
@@ -169,12 +172,15 @@ public class ContestBlockEntity extends BlockEntity implements MenuProvider {
         ));
     }
 
-    public void handleContestAction(ServerPlayer player, UUID sessionId, int value) {
+    public void handleContestAction(ServerPlayer player, UUID sessionId, int expectedPhase,
+                                    int expectedStateVersion, int value) {
         if (level == null || level.isClientSide) {
             return;
         }
         ActiveContest active = activeContests.get(player.getUUID());
-        if (active == null || !active.session.sessionId().equals(sessionId)) {
+        if (active == null || !active.session.sessionId().equals(sessionId)
+                || active.session.phase().ordinal() != expectedPhase
+                || active.session.stateVersion() != expectedStateVersion) {
             return;
         }
         long gameTime = level.getGameTime();
@@ -228,7 +234,7 @@ public class ContestBlockEntity extends BlockEntity implements MenuProvider {
         String pokemonName = active.pokemon.getDisplayName(false).getString();
         if (won) {
             Ribbons ribbons = Ribbons.getFromTag(active.pokemon.getPersistentData().getCompound("Ribbons"));
-            ribbons.setRankedCool(session.rank(), true);
+            setRibbon(ribbons, session.category(), session.rank());
             active.pokemon.getPersistentData().put("Ribbons", ribbons.saveToNBT());
             player.displayClientMessage(Component.translatable(
                     "cobble_contests.contest_result.won_ranked",
@@ -273,38 +279,6 @@ public class ContestBlockEntity extends BlockEntity implements MenuProvider {
             case 4 -> "Tough".equalsIgnoreCase(type);
             default -> false;
         };
-    }
-
-    private void runLegacyStatContest(Pokemon pokemon, int category, ServerPlayer player) {
-        Ribbons ribbons = Ribbons.getFromTag(pokemon.getPersistentData().getCompound("Ribbons"));
-        int rank = ribbons.getNextContestLevel(category);
-        String pokemonName = pokemon.getDisplayName(false).getString();
-        if (rank >= REQUIRED_SCORES.length) {
-            player.displayClientMessage(Component.translatable(
-                    "cobble_contests.contest_result.maxed_ranked", pokemonName, getContestTypeString(category)
-            ).withStyle(ChatFormatting.LIGHT_PURPLE), false);
-            return;
-        }
-
-        CVs stats = CVs.getFromTag(pokemon.getPersistentData().getCompound("CVs"));
-        int value = switch (category) {
-            case 1 -> stats.getBeauty();
-            case 2 -> stats.getCute();
-            case 3 -> stats.getSmart();
-            case 4 -> stats.getTough();
-            default -> stats.getCool();
-        };
-        int[] legacyThresholds = {5, 40, 100, 175, 245};
-        boolean won = value >= legacyThresholds[rank];
-        if (won) {
-            setRibbon(ribbons, category, rank);
-            pokemon.getPersistentData().put("Ribbons", ribbons.saveToNBT());
-        }
-        player.displayClientMessage(Component.translatable(
-                won ? "cobble_contests.contest_result.won_ranked"
-                        : "cobble_contests.contest_result.lost_ranked",
-                pokemonName, getContestLevelString(rank), getContestTypeString(category)
-        ).withStyle(ChatFormatting.LIGHT_PURPLE), false);
     }
 
     private static void setRibbon(Ribbons ribbons, int category, int rank) {

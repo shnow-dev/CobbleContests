@@ -3,7 +3,12 @@ package com.raspix.neoforge.cobble_contests.menus.screens;
 import com.cobblemon.mod.common.client.CobblemonClient;
 import com.cobblemon.mod.common.client.storage.ClientParty;
 import com.raspix.common.cobble_contests.CobbleContests;
+import com.raspix.common.cobble_contests.contest.BeautyCompositionChallenge;
 import com.raspix.common.cobble_contests.contest.ContestPhase;
+import com.raspix.common.cobble_contests.contest.ContestSession;
+import com.raspix.common.cobble_contests.contest.GraceTracingChallenge;
+import com.raspix.common.cobble_contests.contest.SmartMemoryChallenge;
+import com.raspix.common.cobble_contests.contest.ToughProtectionChallenge;
 import com.raspix.neoforge.cobble_contests.blocks.entity.ContestBlockEntity;
 import com.raspix.neoforge.cobble_contests.menus.ContestBoothMenu;
 import com.raspix.neoforge.cobble_contests.menus.widgets.FixedImageButton;
@@ -50,6 +55,8 @@ public class ContestBoothScreen extends AbstractContainerScreen<ContestBoothMenu
     private UUID playerId;
     private CBContestState contestState;
     private long stateReceivedAtNanos;
+    private long categoryStartedAtNanos;
+    private boolean smartInputUnlocked;
 
     public ContestBoothScreen(ContestBoothMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -120,8 +127,16 @@ public class ContestBoothScreen extends AbstractContainerScreen<ContestBoothMenu
                 && state.stateVersion() < contestState.stateVersion()) {
             return;
         }
+        boolean enteringCategory = state.phase() == ContestPhase.CATEGORY.ordinal()
+                && (contestState == null
+                || !contestState.sessionId().equals(state.sessionId())
+                || contestState.phase() != ContestPhase.CATEGORY.ordinal());
         contestState = state;
         stateReceivedAtNanos = System.nanoTime();
+        if (enteringCategory) {
+            categoryStartedAtNanos = stateReceivedAtNanos;
+            smartInputUnlocked = false;
+        }
         setPageIndex(state.finished() ? RESULTS_PAGE : CONTEST_RUNNING_PAGE);
         rebuildContestButtons();
     }
@@ -146,7 +161,7 @@ public class ContestBoothScreen extends AbstractContainerScreen<ContestBoothMenu
         switch (phase) {
             case PRESENTATION -> addPresentationButton();
             case CAPABILITIES -> addMoveButtons();
-            case CATEGORY -> addPrecisionTargets();
+            case CATEGORY -> addCategoryButtons();
             case RHYTHM, FINALE -> addTimingButton();
             case EVALUATION, RESULTS -> {
             }
@@ -199,6 +214,81 @@ public class ContestBoothScreen extends AbstractContainerScreen<ContestBoothMenu
         }
     }
 
+    private void addCategoryButtons() {
+        switch (contestState.category()) {
+            case ContestSession.COOL_CATEGORY -> addPrecisionTargets();
+            case ContestSession.BEAUTY_CATEGORY -> addBeautyOptions();
+            case ContestSession.GRACE_CATEGORY -> addGraceNodes();
+            case ContestSession.SMART_CATEGORY -> addSmartSymbols();
+            case ContestSession.TOUGH_CATEGORY -> addToughLanes();
+            default -> {
+            }
+        }
+    }
+
+    private void addBeautyOptions() {
+        for (int index = 0; index < BeautyCompositionChallenge.OPTION_COUNT; index++) {
+            if ((contestState.resolvedTargets() & (1 << index)) != 0) {
+                continue;
+            }
+            int element = BeautyCompositionChallenge.optionFromPacked(contestState.packedTargets(), index);
+            int selected = index;
+            addContestButton(Button.builder(
+                    Component.translatable("cobble_contests.beauty.element." + element),
+                    button -> submitAction(selected)
+            ).bounds(leftPos + 34 + (index % 3) * 76,
+                    topPos + 88 + (index / 3) * 30, 68, 20).build());
+        }
+    }
+
+    private void addGraceNodes() {
+        int pathLength = GraceTracingChallenge.lengthForRank(contestState.rank());
+        for (int node = 0; node < GraceTracingChallenge.NODE_COUNT; node++) {
+            if ((contestState.resolvedTargets() & (1 << node)) != 0) {
+                continue;
+            }
+            int order = graceOrder(node, pathLength);
+            Component label = order == 0 ? Component.literal("·")
+                    : Component.literal(Integer.toString(order)).withStyle(ChatFormatting.AQUA);
+            int selected = node;
+            addContestButton(Button.builder(label, button -> submitAction(selected))
+                    .bounds(leftPos + 77 + (node % 3) * 57,
+                            topPos + 73 + (node / 3) * 31, 40, 20)
+                    .build());
+        }
+    }
+
+    private int graceOrder(int node, int pathLength) {
+        for (int index = 0; index < pathLength; index++) {
+            if (GraceTracingChallenge.nodeFromPacked(contestState.packedTargets(), index) == node) {
+                return index + 1;
+            }
+        }
+        return 0;
+    }
+
+    private void addSmartSymbols() {
+        for (int symbol = 0; symbol < SmartMemoryChallenge.SYMBOL_COUNT; symbol++) {
+            int selected = symbol;
+            Button button = Button.builder(
+                    Component.translatable("cobble_contests.smart.symbol." + symbol),
+                    ignored -> submitAction(selected)
+            ).bounds(leftPos + 31 + symbol * 58, topPos + 112, 52, 20).build();
+            button.active = smartInputUnlocked;
+            addContestButton(button);
+        }
+    }
+
+    private void addToughLanes() {
+        for (int lane = 0; lane < ToughProtectionChallenge.LANE_COUNT; lane++) {
+            int selected = lane;
+            addContestButton(Button.builder(
+                    Component.translatable("cobble_contests.tough.protect"),
+                    button -> submitAction(selected)
+            ).bounds(leftPos + 42 + lane * 72, topPos + 124, 60, 20).build());
+        }
+    }
+
     private void addTimingButton() {
         Component label = Component.translatable(currentPhase() == ContestPhase.RHYTHM
                 ? "cobble_contests.action.rhythm" : "cobble_contests.action.finale");
@@ -218,7 +308,9 @@ public class ContestBoothScreen extends AbstractContainerScreen<ContestBoothMenu
         for (Button button : contestButtons) {
             button.active = false;
         }
-        menu.sendContestAction(contestState.sessionId(), value);
+        menu.sendContestAction(
+                contestState.sessionId(), contestState.phase(), contestState.stateVersion(), value
+        );
     }
 
     private void selectPokemon(int index) {
@@ -236,12 +328,8 @@ public class ContestBoothScreen extends AbstractContainerScreen<ContestBoothMenu
             return;
         }
         menu.startStatAssesment(playerId, pokemonIndex, colorIndex);
-        if (colorIndex == 0) {
-            for (Button button : waitButtons) {
-                button.active = false;
-            }
-        } else {
-            setPageIndex(STARTING_PAGE);
+        for (Button button : waitButtons) {
+            button.active = false;
         }
     }
 
@@ -323,8 +411,10 @@ public class ContestBoothScreen extends AbstractContainerScreen<ContestBoothMenu
             return;
         }
         ContestPhase phase = currentPhase();
-        drawCentered(graphics, Component.translatable(phaseKey(phase)), 28, 0xFFFFFF);
-        drawCentered(graphics, Component.translatable(instructionKey(phase)), 48, 0xE8D9F0);
+        drawCentered(graphics, Component.translatable(phaseTitleKey(phase, contestState.category())),
+                28, 0xFFFFFF);
+        drawCentered(graphics, Component.translatable(instructionKey(phase, contestState.category())),
+                48, 0xE8D9F0);
         graphics.drawString(font, Component.translatable("cobble_contests.contest.rank",
                         Component.translatable(rankKey(contestState.rank()))),
                 leftPos + 25, topPos + 185, 0xDFA9FF, false);
@@ -334,7 +424,68 @@ public class ContestBoothScreen extends AbstractContainerScreen<ContestBoothMenu
         renderCompletedScore(graphics, phase);
         if (phase == ContestPhase.RHYTHM || phase == ContestPhase.FINALE) {
             renderTimingBar(graphics);
+        } else if (phase == ContestPhase.CATEGORY) {
+            renderCategoryDetails(graphics);
         }
+    }
+
+    private void renderCategoryDetails(GuiGraphics graphics) {
+        switch (contestState.category()) {
+            case ContestSession.BEAUTY_CATEGORY -> {
+                int theme = BeautyCompositionChallenge.themeFromPacked(contestState.packedTargets());
+                drawCentered(graphics, Component.translatable("cobble_contests.beauty.theme",
+                        Component.translatable("cobble_contests.beauty.theme." + theme)), 68, 0xFFD966);
+            }
+            case ContestSession.GRACE_CATEGORY -> drawCentered(graphics,
+                    Component.translatable("cobble_contests.grace.progress", contestState.progress() + 1,
+                            GraceTracingChallenge.lengthForRank(contestState.rank())),
+                    62, 0x72E6FF);
+            case ContestSession.SMART_CATEGORY -> renderSmartSequence(graphics);
+            case ContestSession.TOUGH_CATEGORY -> renderToughThreat(graphics);
+            default -> {
+            }
+        }
+    }
+
+    private void renderSmartSequence(GuiGraphics graphics) {
+        double elapsed = (System.nanoTime() - categoryStartedAtNanos) / 1_000_000_000.0D;
+        boolean preview = elapsed < 3.0D;
+        if (!preview && !smartInputUnlocked) {
+            smartInputUnlocked = true;
+            for (Button button : contestButtons) {
+                button.active = true;
+            }
+        }
+        if (preview) {
+            Component sequence = Component.empty();
+            int length = SmartMemoryChallenge.lengthForRank(contestState.rank());
+            for (int index = 0; index < length; index++) {
+                if (index > 0) {
+                    sequence = sequence.copy().append("  ");
+                }
+                int symbol = SmartMemoryChallenge.symbolFromPacked(contestState.packedTargets(), index);
+                sequence = sequence.copy().append(Component.translatable(
+                        "cobble_contests.smart.symbol." + symbol));
+            }
+            drawCentered(graphics, sequence, 80, 0xFFD966);
+        } else {
+            drawCentered(graphics, Component.translatable("cobble_contests.smart.repeat",
+                    contestState.progress() + 1,
+                    SmartMemoryChallenge.lengthForRank(contestState.rank())), 80, 0x72E6FF);
+        }
+    }
+
+    private void renderToughThreat(GuiGraphics graphics) {
+        int length = ToughProtectionChallenge.lengthForRank(contestState.rank());
+        if (contestState.progress() >= length) {
+            return;
+        }
+        int lane = ToughProtectionChallenge.laneFromPacked(
+                contestState.packedTargets(), contestState.progress());
+        graphics.drawCenteredString(font, Component.translatable("cobble_contests.tough.threat"),
+                leftPos + 72 + lane * 72, topPos + 92, 0xFF8585);
+        drawCentered(graphics, Component.translatable("cobble_contests.tough.progress",
+                contestState.progress() + 1, length), 70, 0xFFD966);
     }
 
     private void renderCompletedScore(GuiGraphics graphics, ContestPhase phase) {
@@ -375,7 +526,8 @@ public class ContestBoothScreen extends AbstractContainerScreen<ContestBoothMenu
         ContestPhase[] phases = ContestPhase.values();
         for (int index = 0; index < scores.length; index++) {
             graphics.drawString(font, Component.translatable("cobble_contests.contest_result.phase_line",
-                            Component.translatable(phaseKey(phases[index])), scores[index], phases[index].weight()),
+                            Component.translatable(phaseTitleKey(phases[index], contestState.category())),
+                            scores[index], phases[index].weight()),
                     leftPos + 42, topPos + 48 + index * 18, 0xFFFFFF, false);
         }
         drawCentered(graphics, Component.translatable("cobble_contests.contest_result.total",
@@ -407,12 +559,26 @@ public class ContestBoothScreen extends AbstractContainerScreen<ContestBoothMenu
         return "cobble_contests.phase." + phase.name().toLowerCase(Locale.ROOT);
     }
 
-    private static String instructionKey(ContestPhase phase) {
+    private static String phaseTitleKey(ContestPhase phase, int category) {
+        if (phase == ContestPhase.CATEGORY) {
+            return "cobble_contests.category." + categorySuffix(category) + ".title";
+        }
+        return phaseKey(phase);
+    }
+
+    private static String instructionKey(ContestPhase phase, int category) {
+        if (phase == ContestPhase.CATEGORY) {
+            return "cobble_contests.category." + categorySuffix(category) + ".instruction";
+        }
         return "cobble_contests.phase." + phase.name().toLowerCase(Locale.ROOT) + ".instruction";
     }
 
     private static String contestTypeKey(int type) {
-        String suffix = switch (type) {
+        return "cobble_contests.contest_type." + categorySuffix(type);
+    }
+
+    private static String categorySuffix(int type) {
+        return switch (type) {
             case 0 -> "cool";
             case 1 -> "beauty";
             case 2 -> "cute";
@@ -420,7 +586,6 @@ public class ContestBoothScreen extends AbstractContainerScreen<ContestBoothMenu
             case 4 -> "tough";
             default -> "cool";
         };
-        return "cobble_contests.contest_type." + suffix;
     }
 
     private static String rankKey(int rank) {

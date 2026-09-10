@@ -74,7 +74,6 @@ public class ContestBoothMenu extends AbstractContainerMenu {
         this.blockEntity.tryHosting(player);
         this.blockEntity.startContest(color, player);
         this.blockEntity.addContestant(player, pokemonIdx);
-        System.out.println(this.blockEntity.getCurrentContestInfo());
     }
 
     public String getContestResults(){
@@ -86,7 +85,9 @@ public class ContestBoothMenu extends AbstractContainerMenu {
         PacketDistributor.sendToServer(new SBRunContest(player, pokemonIdx, blockEntity.getBlockPos(), contestType, 0));
     }
 
-    public void sendContestAction(UUID sessionId, int value) {
-        PacketDistributor.sendToServer(new SBContestAction(sessionId, blockEntity.getBlockPos(), value));
+    public void sendContestAction(UUID sessionId, int phase, int stateVersion, int value) {
+        PacketDistributor.sendToServer(new SBContestAction(
+                sessionId, blockEntity.getBlockPos(), phase, stateVersion, value
+        ));
     }
 }

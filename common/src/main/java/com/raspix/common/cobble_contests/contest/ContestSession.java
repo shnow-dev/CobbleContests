@@ -10,6 +10,11 @@ import java.util.UUID;
  * and phase transitions.
  */
 public final class ContestSession {
+    public static final int COOL_CATEGORY = 0;
+    public static final int BEAUTY_CATEGORY = 1;
+    public static final int GRACE_CATEGORY = 2;
+    public static final int SMART_CATEGORY = 3;
+    public static final int TOUGH_CATEGORY = 4;
     public static final int PRESENTATION_ACTIONS = 3;
     public static final int CAPABILITY_ACTIONS = 3;
     public static final int RHYTHM_ACTIONS = 5;
@@ -30,6 +35,10 @@ public final class ContestSession {
     private final MoveOption[] moves = new MoveOption[4];
     private final ContestScore scores = new ContestScore();
     private final CoolPrecisionChallenge precisionChallenge;
+    private final BeautyCompositionChallenge beautyChallenge;
+    private final GraceTracingChallenge graceChallenge;
+    private final SmartMemoryChallenge smartChallenge;
+    private final ToughProtectionChallenge toughChallenge;
 
     private ContestPhase phase = ContestPhase.PRESENTATION;
     private long phaseStartedAt;
@@ -51,7 +60,25 @@ public final class ContestSession {
         for (int index = 0; index < this.moves.length; index++) {
             this.moves[index] = index < moves.size() ? moves.get(index) : MoveOption.missing();
         }
-        this.precisionChallenge = new CoolPrecisionChallenge(seed);
+
+        CoolPrecisionChallenge precision = null;
+        BeautyCompositionChallenge beauty = null;
+        GraceTracingChallenge grace = null;
+        SmartMemoryChallenge smart = null;
+        ToughProtectionChallenge tough = null;
+        switch (category) {
+            case COOL_CATEGORY -> precision = new CoolPrecisionChallenge(seed);
+            case BEAUTY_CATEGORY -> beauty = new BeautyCompositionChallenge(seed);
+            case GRACE_CATEGORY -> grace = new GraceTracingChallenge(seed, rank);
+            case SMART_CATEGORY -> smart = new SmartMemoryChallenge(seed, rank);
+            case TOUGH_CATEGORY -> tough = new ToughProtectionChallenge(seed, rank);
+            default -> throw new IllegalArgumentException("Unknown contest category " + category);
+        }
+        precisionChallenge = precision;
+        beautyChallenge = beauty;
+        graceChallenge = grace;
+        smartChallenge = smart;
+        toughChallenge = tough;
         beginPhase(ContestPhase.PRESENTATION, gameTime);
     }
 
@@ -63,7 +90,7 @@ public final class ContestSession {
         return switch (phase) {
             case PRESENTATION -> timedAction(PRESENTATION_ACTIONS, value, gameTime);
             case CAPABILITIES -> capabilityAction(value, gameTime);
-            case CATEGORY -> precisionAction(value, gameTime);
+            case CATEGORY -> categoryAction(value, gameTime);
             case RHYTHM -> rhythmAction(value, gameTime);
             case FINALE -> timedAction(1, value, gameTime);
             case EVALUATION, RESULTS -> false;
@@ -133,6 +160,86 @@ public final class ContestSession {
         return true;
     }
 
+    private boolean categoryAction(int value, long gameTime) {
+        return switch (category) {
+            case COOL_CATEGORY -> precisionAction(value, gameTime);
+            case BEAUTY_CATEGORY -> beautyAction(value, gameTime);
+            case GRACE_CATEGORY -> graceAction(value, gameTime);
+            case SMART_CATEGORY -> smartAction(value, gameTime);
+            case TOUGH_CATEGORY -> toughAction(value, gameTime);
+            default -> false;
+        };
+    }
+
+    private boolean beautyAction(int optionIndex, long gameTime) {
+        if (optionIndex < 0 || optionIndex >= BeautyCompositionChallenge.OPTION_COUNT) {
+            return false;
+        }
+        int bit = 1 << optionIndex;
+        if ((resolvedTargets & bit) != 0) {
+            return false;
+        }
+        resolvedTargets |= bit;
+        accumulatedScore += beautyChallenge.pointsForOption(optionIndex);
+        progress++;
+        stateVersion++;
+        if (progress >= BeautyCompositionChallenge.PICK_COUNT) {
+            finishCurrentPhase(gameTime);
+        }
+        return true;
+    }
+
+    private boolean graceAction(int nodeIndex, long gameTime) {
+        if (nodeIndex < 0 || nodeIndex >= GraceTracingChallenge.NODE_COUNT) {
+            return false;
+        }
+        if (nodeIndex == graceChallenge.nodeAt(progress)) {
+            accumulatedScore += graceChallenge.pointsPerNode();
+            resolvedTargets |= 1 << nodeIndex;
+            progress++;
+        } else {
+            accumulatedScore -= 10;
+        }
+        stateVersion++;
+        if (progress >= graceChallenge.length()) {
+            finishCurrentPhase(gameTime);
+        }
+        return true;
+    }
+
+    private boolean smartAction(int symbol, long gameTime) {
+        if (symbol < 0 || symbol >= SmartMemoryChallenge.SYMBOL_COUNT
+                || gameTime - phaseStartedAt < 20L * 3L) {
+            return false;
+        }
+        if (symbol == smartChallenge.symbolAt(progress)) {
+            accumulatedScore += smartChallenge.pointsPerSymbol();
+        }
+        progress++;
+        stateVersion++;
+        if (progress >= smartChallenge.length()) {
+            finishCurrentPhase(gameTime);
+        }
+        return true;
+    }
+
+    private boolean toughAction(int lane, long gameTime) {
+        if (lane < 0 || lane >= ToughProtectionChallenge.LANE_COUNT) {
+            return false;
+        }
+        if (lane == toughChallenge.laneAt(progress)) {
+            accumulatedScore += reactionScore(gameTime - phaseStartedAt);
+        }
+        progress++;
+        stateVersion++;
+        if (progress >= toughChallenge.length()) {
+            finishCurrentPhase(gameTime);
+        } else {
+            phaseStartedAt = gameTime;
+        }
+        return true;
+    }
+
     private boolean rhythmAction(int beatIndex, long gameTime) {
         if (beatIndex != progress) {
             return false;
@@ -153,7 +260,7 @@ public final class ContestSession {
         switch (phase) {
             case PRESENTATION -> scores.set(phase, accumulatedScore / PRESENTATION_ACTIONS);
             case CAPABILITIES -> scores.set(phase, accumulatedScore / CAPABILITY_ACTIONS);
-            case CATEGORY -> scores.set(phase, accumulatedScore);
+            case CATEGORY -> scores.set(phase, categoryScore());
             case RHYTHM -> scores.set(phase, accumulatedScore / RHYTHM_ACTIONS);
             case FINALE -> scores.set(phase, accumulatedScore);
             case EVALUATION, RESULTS -> {
@@ -206,6 +313,13 @@ public final class ContestSession {
         return 30;
     }
 
+    private int categoryScore() {
+        if (category == TOUGH_CATEGORY) {
+            return accumulatedScore / toughChallenge.length();
+        }
+        return accumulatedScore;
+    }
+
     public UUID sessionId() {
         return sessionId;
     }
@@ -247,7 +361,25 @@ public final class ContestSession {
     }
 
     public int packedTargets() {
-        return precisionChallenge.packedTargets();
+        return switch (category) {
+            case COOL_CATEGORY -> precisionChallenge.packedTargets();
+            case BEAUTY_CATEGORY -> beautyChallenge.packedData();
+            case GRACE_CATEGORY -> graceChallenge.packedData();
+            case SMART_CATEGORY -> smartChallenge.packedData();
+            case TOUGH_CATEGORY -> toughChallenge.packedData();
+            default -> 0;
+        };
+    }
+
+    public int categoryActionCount() {
+        return switch (category) {
+            case COOL_CATEGORY -> CoolPrecisionChallenge.TARGET_COUNT;
+            case BEAUTY_CATEGORY -> BeautyCompositionChallenge.PICK_COUNT;
+            case GRACE_CATEGORY -> graceChallenge.length();
+            case SMART_CATEGORY -> smartChallenge.length();
+            case TOUGH_CATEGORY -> toughChallenge.length();
+            default -> 0;
+        };
     }
 
     public int stateVersion() {
