@@ -30,6 +30,11 @@ public final class LoopingContestMusic extends AbstractTickableSoundInstance {
     }
 
     @Override
+    public boolean canStartSilent() {
+        return true;
+    }
+
+    @Override
     public void tick() {
         if (volume < targetVolume) {
             volume = Math.min(targetVolume, volume + FADE_PER_TICK);

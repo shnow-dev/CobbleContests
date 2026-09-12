@@ -17,6 +17,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import com.raspix.common.cobble_contests.CobbleContests;
 import com.raspix.common.cobble_contests.contest.ContestPhase;
 import com.raspix.common.cobble_contests.contest.PresentationBubbleChallenge;
+import com.raspix.neoforge.cobble_contests.Config;
 import com.raspix.neoforge.cobble_contests.client.sound.LoopingContestMusic;
 import com.raspix.neoforge.cobble_contests.menus.ContestBoothMenu;
 import com.raspix.neoforge.cobble_contests.network.CBContestState;
@@ -57,7 +58,7 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
     private static final int CUSTOM_ICON_SOURCE_SIZE = 256;
     private static final int WELCOME_COUNTER_SOURCE_Y = 590;
     private static final long CURTAIN_DURATION_NANOS = 700_000_000L;
-    private static final long COUNTDOWN_STEP_NANOS = 900_000_000L;
+    private static final long COUNTDOWN_STEP_NANOS = 1_200_000_000L;
     private static final long COUNTDOWN_DURATION_NANOS = COUNTDOWN_STEP_NANOS * 4L;
     private static final long TRANSITION_FADE_NANOS = 350_000_000L;
     private static final long POP_DURATION_NANOS = 320_000_000L;
@@ -128,6 +129,7 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
     private long gaugeAnimationStartedAtNanos;
     private int highestGaugeMilestone;
     private int lastCountdownCue = Integer.MIN_VALUE;
+    private int pendingClickedBubble = -1;
     private boolean transitionFromSelection;
 
     public ContestBoothScreen(ContestBoothMenu menu, Inventory playerInventory, Component title) {
@@ -193,10 +195,15 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
         int previousWave = contestState == null ? -1 : contestState.progress();
         int previousPhase = contestState == null ? -1 : contestState.phase();
         int previousGauge = contestState == null ? 0 : contestState.resolvedTargets();
+        int[] previousTargets = contestState == null
+                ? new int[0] : contestState.presentationTargets();
+        double previousBubbleElapsed = bubbleElapsedSeconds();
+        addExpiredBubblePops(previousTargets, state.presentationTargets(), previousBubbleElapsed);
         contestState = state;
         stateReceivedAtNanos = System.nanoTime();
         awaitingServer = false;
         awaitingBubbleAck = false;
+        pendingClickedBubble = -1;
         if (!sameSession) {
             highestGaugeMilestone = 0;
         }
@@ -233,6 +240,32 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
         if (page == Page.PRESENTATION) {
             if (!sameSession || previousWave != state.progress() || bubbleShownAtNanos == 0L) {
                 bubbleShownAtNanos = stateReceivedAtNanos;
+            }
+        }
+    }
+
+    private void addExpiredBubblePops(int[] previousTargets, int[] nextTargets,
+                                      double previousElapsed) {
+        if (page != Page.PRESENTATION || previousTargets.length == 0) {
+            return;
+        }
+        long now = System.nanoTime();
+        for (int previous : previousTargets) {
+            int bubbleIndex = PresentationBubbleChallenge.unpackBubbleIndex(previous);
+            boolean stillVisible = false;
+            for (int next : nextTargets) {
+                if (PresentationBubbleChallenge.unpackBubbleIndex(next) == bubbleIndex) {
+                    stillVisible = true;
+                    break;
+                }
+            }
+            if (!stillVisible && bubbleIndex != pendingClickedBubble) {
+                popEffects.add(new PopEffect(
+                        bubbleIndex,
+                        bubbleX(previous, previousElapsed),
+                        bubbleY(previous, previousElapsed),
+                        now
+                ));
             }
         }
     }
@@ -276,8 +309,8 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
 
     private void createWelcomeWidgets() {
         float[][] centers = {
-                {0.099F, 0.259F}, {0.233F, 0.171F}, {0.374F, 0.128F},
-                {0.515F, 0.171F}, {0.654F, 0.259F}
+                {0.090F, 0.259F}, {0.233F, 0.186F}, {0.374F, 0.143F},
+                {0.515F, 0.186F}, {0.654F, 0.259F}
         };
         int size = Math.max(56, Math.min(px(0.110F), py(0.195F)));
         for (int category = 0; category < centers.length; category++) {
@@ -312,7 +345,7 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
                     rebuildWidgets();
                     rebuildPokemonModels();
                 }
-        ).bounds(rankX, py(0.625F), rankWidth, rankHeight).build());
+        ).bounds(rankX, py(0.612F), rankWidth, rankHeight).build());
         startButton.active = selectedCategory >= 0 && selectedRank >= 0;
     }
 
@@ -342,11 +375,11 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
                     rebuildWidgets();
                     rebuildPokemonModels();
                 }
-        ).bounds(px(0.086F), footerY, px(0.105F), footerHeight).build());
+        ).bounds(px(0.105F), footerY, px(0.105F), footerHeight).build());
 
         Button start = addRenderableWidget(Button.builder(
                 Component.translatable("cobble_contests.action.start"), button -> requestContestStart()
-        ).bounds(px(0.738F), footerY, px(0.145F), footerHeight).build());
+        ).bounds(px(0.720F), footerY, px(0.145F), footerHeight).build());
         start.active = canSelectedPokemonEnterRank() && !awaitingServer;
     }
 
@@ -427,12 +460,12 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
             return;
         }
         selectionModel = new ModelWidget(
-                px(0.620F), py(0.505F), px(0.260F), py(0.260F),
-                pokemon.asRenderablePokemon(), 1.55F, 30F, -42.0
+                px(0.620F), py(0.700F), px(0.260F), py(0.180F),
+                pokemon.asRenderablePokemon(), 1.40F, 30F, -42.0
         );
         arenaModel = new ModelWidget(
-                px(0.365F), py(0.395F), px(0.270F), py(0.270F),
-                pokemon.asRenderablePokemon(), 1.75F, 30F, -42.0
+                px(0.365F), py(0.620F), px(0.270F), py(0.220F),
+                pokemon.asRenderablePokemon(), 1.55F, 30F, -42.0
         );
     }
 
@@ -540,7 +573,8 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
                 renderFullscreenFade(graphics, ease(progress) * 0.55F);
             }
             case COUNTDOWN -> {
-                renderArena(graphics, mouseX, mouseY, partialTick, false);
+                // Keep the arena behind the curtain, but hide the Pokémon until it opens.
+                blitFullscreen(graphics, ARENA);
                 renderCurtain(graphics, 0.0F);
                 renderCountdown(graphics, countdownCue(System.nanoTime()), 1.0F);
                 float fade = 1.0F - Math.min(1.0F,
@@ -591,7 +625,7 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
                                                    float partialTick) {
         blitFullscreen(graphics, POKEMON_SELECTION);
         if (selectionModel != null) {
-            graphics.enableScissor(px(0.585F), py(0.445F), px(0.915F), py(0.810F));
+            graphics.enableScissor(px(0.585F), py(0.445F), px(0.915F), py(0.900F));
             selectionModel.visible = true;
             selectionModel.render(graphics, mouseX, mouseY, partialTick);
             graphics.disableScissor();
@@ -605,7 +639,7 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
                              boolean showChallenge) {
         blitFullscreen(graphics, ARENA);
         if (arenaModel != null) {
-            graphics.enableScissor(px(0.285F), py(0.275F), px(0.715F), py(0.720F));
+            graphics.enableScissor(px(0.285F), py(0.410F), px(0.715F), py(0.860F));
             arenaModel.visible = true;
             arenaModel.render(graphics, mouseX, mouseY, partialTick);
             graphics.disableScissor();
@@ -909,13 +943,13 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
         if (selectedCategory < 0 || selectedRank < 0) {
             graphics.drawCenteredString(font,
                     Component.translatable("cobble_contests.welcome.choose_category_rank"),
-                    px(0.390F), py(0.838F), 0xFFFFFFFF);
+                    px(0.365F), py(0.820F), 0xFFFFFFFF);
         } else {
             graphics.drawCenteredString(font, Component.translatable(
                             "cobble_contests.welcome.summary",
                             Component.translatable(contestTypeKey(selectedCategory)),
                             Component.translatable(rankKey(selectedRank))),
-                    px(0.390F), py(0.838F), 0xFFFFFFFF);
+                    px(0.365F), py(0.820F), 0xFFFFFFFF);
         }
     }
 
@@ -1016,7 +1050,8 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
             }
             if (clickedTarget >= 0) {
                 awaitingBubbleAck = true;
-                popEffects.add(new PopEffect(clickedX, clickedY, System.nanoTime()));
+                pendingClickedBubble = clickedTarget;
+                popEffects.add(new PopEffect(clickedTarget, clickedX, clickedY, System.nanoTime()));
                 menu.sendContestAction(contestState.sessionId(), contestState.phase(),
                         contestState.stateVersion(), clickedTarget);
                 return true;
@@ -1051,7 +1086,7 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
     private void switchToMenuMusic() {
         startMusicLoops();
         if (menuMusic != null) {
-            menuMusic.fadeTo(0.62F);
+            menuMusic.fadeTo(Config.menuMusicVolume());
         }
         if (challengeMusic != null) {
             challengeMusic.fadeTo(0.0F);
@@ -1064,7 +1099,7 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
             menuMusic.fadeTo(0.0F);
         }
         if (challengeMusic != null) {
-            challengeMusic.fadeTo(0.68F);
+            challengeMusic.fadeTo(Config.challengeMusicVolume());
         }
     }
 
@@ -1119,7 +1154,7 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
         RESULTS
     }
 
-    private record PopEffect(int x, int y, long startedAtNanos) {
+    private record PopEffect(int bubbleIndex, int x, int y, long startedAtNanos) {
     }
 
     private final class CategoryButton extends AbstractButton {
@@ -1140,26 +1175,10 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
 
         @Override
         public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-            if (selectedCategory == category || isHoveredOrFocused()) {
-                graphics.fill(getX() - 3, getY() - 3,
-                        getX() + getWidth() + 3, getY() + getHeight() + 3,
-                        selectedCategory == category ? 0x66FFFFFF : 0x443FD9FF);
-            }
             int iconSize = Math.min(getWidth(), getHeight());
             graphics.blit(CATEGORY_ICONS[category], getX(), getY(), iconSize, iconSize,
                     0.0F, 0.0F, CUSTOM_ICON_SOURCE_SIZE, CUSTOM_ICON_SOURCE_SIZE,
                     CUSTOM_ICON_SOURCE_SIZE, CUSTOM_ICON_SOURCE_SIZE);
-
-            int labelWidth = Math.min(getWidth() - 8, font.width(getMessage()) + 14);
-            int labelHeight = font.lineHeight + 7;
-            int labelX = getX() + (getWidth() - labelWidth) / 2;
-            int labelY = getY() + getHeight() - labelHeight - 7;
-            graphics.fill(labelX, labelY, labelX + labelWidth, labelY + labelHeight,
-                    0xD91A2149);
-            graphics.renderOutline(labelX, labelY, labelWidth, labelHeight,
-                    selectedCategory == category ? 0xFFFFFFFF : 0xFFFFD966);
-            graphics.drawCenteredString(font, getMessage(),
-                    getX() + getWidth() / 2, labelY + 4, 0xFFFFFFFF);
         }
 
         @Override
@@ -1210,13 +1229,13 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
                     getX() + getWidth() - 4, modelBottom);
             poses.pushPose();
             poses.translate(getX() + getWidth() / 2.0F,
-                    getY() + getHeight() * 0.28F, 30.0F);
+                    getY() + getHeight() * 0.12F, 30.0F);
             drawProfilePokemon(
                     pokemon.asRenderablePokemon(), poses,
                     new Quaternionf().rotationXYZ((float) Math.toRadians(13.0F),
                             (float) Math.toRadians(35.0F), 0.0F),
                     PoseType.PROFILE, new FloatingState(), partialTick,
-                    Math.min(getWidth(), getHeight()) * 0.36F,
+                    Math.min(getWidth(), getHeight()) * 0.27F,
                     true, false, 1.0F, 1.0F, 1.0F, active ? 1.0F : 0.45F,
                     0.0F, 0.0F
             );

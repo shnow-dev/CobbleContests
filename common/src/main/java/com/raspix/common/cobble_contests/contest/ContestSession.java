@@ -21,7 +21,7 @@ public final class ContestSession {
 
     private static final long PRESENTATION_DURATION = 20L * 15L;
     // Leaves enough time for: curtain closing, 3-2-1-GO, then curtain opening.
-    private static final long PRESENTATION_INTRO_TICKS = 20L * 5L;
+    private static final long PRESENTATION_INTRO_TICKS = 20L * 7L;
     private static final long EVALUATION_DURATION = 20L * 2L;
     private static final long CAPABILITIES_DURATION = 20L * 20L;
     private static final long CATEGORY_DURATION = 20L * 20L;
