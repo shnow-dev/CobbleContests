@@ -12,10 +12,14 @@ public final class ClientPayloadHandler {
     private ClientPayloadHandler() {}
 
     public static void handleWalletParty(CBWalletScreenParty data, IPayloadContext context) {
-        if (Minecraft.getInstance().screen instanceof PlayerConditionCardScreen screen
-                && context.player().getUUID().equals(data.getId())) {
+        if (!context.player().getUUID().equals(data.getId())) {
+            return;
+        }
+        if (Minecraft.getInstance().screen instanceof PlayerConditionCardScreen screen) {
             screen.setCVs(data.getTag());
             screen.setRibbons(data.getTag());
+        } else if (Minecraft.getInstance().screen instanceof ContestBoothScreen screen) {
+            screen.setContestData(data.getTag());
         }
     }
 

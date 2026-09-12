@@ -20,6 +20,7 @@ public final class ContestSession {
     public static final int RHYTHM_ACTIONS = 5;
 
     private static final long PRESENTATION_DURATION = 20L * 15L;
+    private static final long PRESENTATION_INTRO_TICKS = 20L * 2L;
     private static final long EVALUATION_DURATION = 20L * 2L;
     private static final long CAPABILITIES_DURATION = 20L * 20L;
     private static final long CATEGORY_DURATION = 20L * 20L;
@@ -32,6 +33,7 @@ public final class ContestSession {
     private final int category;
     private final int rank;
     private final int evaluationScore;
+    private final boolean presentationOnly;
     private final MoveOption[] moves = new MoveOption[4];
     private final ContestScore scores = new ContestScore();
     private final CoolPrecisionChallenge precisionChallenge;
@@ -39,6 +41,7 @@ public final class ContestSession {
     private final GraceTracingChallenge graceChallenge;
     private final SmartMemoryChallenge smartChallenge;
     private final ToughProtectionChallenge toughChallenge;
+    private final PresentationBubbleChallenge presentationChallenge;
 
     private ContestPhase phase = ContestPhase.PRESENTATION;
     private long phaseStartedAt;
@@ -49,14 +52,23 @@ public final class ContestSession {
     private int resolvedTargets;
     private int stateVersion;
     private int lastMoveIndex = -1;
+    private int presentationGauge;
+    private int presentationResolvedMask;
 
     public ContestSession(UUID playerId, int partySlot, int category, int rank,
                           int evaluationScore, List<MoveOption> moves, long seed, long gameTime) {
+        this(playerId, partySlot, category, rank, evaluationScore, moves, seed, gameTime, false);
+    }
+
+    public ContestSession(UUID playerId, int partySlot, int category, int rank,
+                          int evaluationScore, List<MoveOption> moves, long seed, long gameTime,
+                          boolean presentationOnly) {
         this.playerId = playerId;
         this.partySlot = partySlot;
         this.category = category;
         this.rank = rank;
         this.evaluationScore = ContestScore.clamp(evaluationScore);
+        this.presentationOnly = presentationOnly;
         for (int index = 0; index < this.moves.length; index++) {
             this.moves[index] = index < moves.size() ? moves.get(index) : MoveOption.missing();
         }
@@ -79,7 +91,13 @@ public final class ContestSession {
         graceChallenge = grace;
         smartChallenge = smart;
         toughChallenge = tough;
+        presentationChallenge = new PresentationBubbleChallenge(seed);
         beginPhase(ContestPhase.PRESENTATION, gameTime);
+        if (presentationOnly) {
+            phaseStartedAt = gameTime + PRESENTATION_INTRO_TICKS;
+            timingTargetAt = phaseStartedAt + presentationChallenge.waveLifetimeTicks(0);
+            phaseEndsAt = phaseStartedAt + presentationChallenge.totalLifetimeTicks();
+        }
     }
 
     public boolean act(int value, long gameTime) {
@@ -88,7 +106,9 @@ public final class ContestSession {
         }
 
         return switch (phase) {
-            case PRESENTATION -> timedAction(PRESENTATION_ACTIONS, value, gameTime);
+            case PRESENTATION -> presentationOnly
+                    ? presentationAction(value, gameTime)
+                    : timedAction(PRESENTATION_ACTIONS, value, gameTime);
             case CAPABILITIES -> capabilityAction(value, gameTime);
             case CATEGORY -> categoryAction(value, gameTime);
             case RHYTHM -> rhythmAction(value, gameTime);
@@ -99,9 +119,62 @@ public final class ContestSession {
 
     public boolean tick(long gameTime) {
         if (phase == ContestPhase.RESULTS || gameTime <= phaseEndsAt) {
+            if (phase == ContestPhase.PRESENTATION && presentationOnly
+                    && gameTime >= timingTargetAt) {
+                return skipPresentationBubble(gameTime);
+            }
             return false;
         }
         finishCurrentPhase(gameTime);
+        return true;
+    }
+
+    private boolean presentationAction(int bubbleIndex, long gameTime) {
+        if (gameTime < phaseStartedAt || gameTime >= timingTargetAt
+                || progress >= presentationChallenge.waveCount()) {
+            return false;
+        }
+
+        int[] wave = presentationChallenge.packedWave(progress);
+        int selectedSlot = -1;
+        for (int slot = 0; slot < wave.length; slot++) {
+            if (PresentationBubbleChallenge.unpackBubbleIndex(wave[slot]) == bubbleIndex) {
+                selectedSlot = slot;
+                break;
+            }
+        }
+        if (selectedSlot < 0 || (presentationResolvedMask & (1 << selectedSlot)) != 0) {
+            return false;
+        }
+
+        presentationGauge = PresentationBubbleChallenge.apply(
+                PresentationBubbleChallenge.unpackType(wave[selectedSlot]), presentationGauge
+        );
+        presentationResolvedMask |= 1 << selectedSlot;
+        resolvedTargets = presentationGauge;
+        if (presentationResolvedMask == (1 << wave.length) - 1) {
+            return advancePresentation(gameTime);
+        }
+        stateVersion++;
+        return true;
+    }
+
+    private boolean skipPresentationBubble(long gameTime) {
+        if (progress >= presentationChallenge.waveCount()) {
+            return false;
+        }
+        return advancePresentation(gameTime);
+    }
+
+    private boolean advancePresentation(long gameTime) {
+        progress++;
+        presentationResolvedMask = 0;
+        if (progress >= presentationChallenge.waveCount()) {
+            finishCurrentPhase(gameTime);
+        } else {
+            timingTargetAt = gameTime + presentationChallenge.waveLifetimeTicks(progress);
+            stateVersion++;
+        }
         return true;
     }
 
@@ -258,7 +331,9 @@ public final class ContestSession {
 
     private void finishCurrentPhase(long gameTime) {
         switch (phase) {
-            case PRESENTATION -> scores.set(phase, accumulatedScore / PRESENTATION_ACTIONS);
+            case PRESENTATION -> scores.set(phase, presentationOnly
+                    ? PresentationBubbleChallenge.scoreForGauge(presentationGauge)
+                    : accumulatedScore / PRESENTATION_ACTIONS);
             case CAPABILITIES -> scores.set(phase, accumulatedScore / CAPABILITY_ACTIONS);
             case CATEGORY -> scores.set(phase, categoryScore());
             case RHYTHM -> scores.set(phase, accumulatedScore / RHYTHM_ACTIONS);
@@ -268,7 +343,7 @@ public final class ContestSession {
         }
 
         ContestPhase next = switch (phase) {
-            case PRESENTATION -> ContestPhase.EVALUATION;
+            case PRESENTATION -> presentationOnly ? ContestPhase.RESULTS : ContestPhase.EVALUATION;
             case EVALUATION -> ContestPhase.CAPABILITIES;
             case CAPABILITIES -> ContestPhase.CATEGORY;
             case CATEGORY -> ContestPhase.RHYTHM;
@@ -286,10 +361,16 @@ public final class ContestSession {
         phaseStartedAt = gameTime;
         progress = 0;
         accumulatedScore = 0;
+        resolvedTargets = phase == ContestPhase.RESULTS && presentationOnly
+                ? presentationGauge : 0;
+        presentationResolvedMask = 0;
         lastMoveIndex = -1;
-        timingTargetAt = gameTime + 20L;
+        timingTargetAt = phase == ContestPhase.PRESENTATION && presentationOnly
+                ? gameTime + presentationChallenge.waveLifetimeTicks(0)
+                : gameTime + 20L;
         phaseEndsAt = switch (phase) {
-            case PRESENTATION -> gameTime + PRESENTATION_DURATION;
+            case PRESENTATION -> gameTime + (presentationOnly
+                    ? presentationChallenge.totalLifetimeTicks() : PRESENTATION_DURATION);
             case CAPABILITIES -> gameTime + CAPABILITIES_DURATION;
             case CATEGORY -> gameTime + CATEGORY_DURATION;
             case RHYTHM -> gameTime + RHYTHM_DURATION;
@@ -361,6 +442,10 @@ public final class ContestSession {
     }
 
     public int packedTargets() {
+        int[] presentationTargets = presentationTargets();
+        if (presentationTargets.length > 0) {
+            return presentationTargets[0];
+        }
         return switch (category) {
             case COOL_CATEGORY -> precisionChallenge.packedTargets();
             case BEAUTY_CATEGORY -> beautyChallenge.packedData();
@@ -369,6 +454,23 @@ public final class ContestSession {
             case TOUGH_CATEGORY -> toughChallenge.packedData();
             default -> 0;
         };
+    }
+
+    public int[] presentationTargets() {
+        if (phase != ContestPhase.PRESENTATION || !presentationOnly
+                || progress >= presentationChallenge.waveCount()) {
+            return new int[0];
+        }
+        int[] wave = presentationChallenge.packedWave(progress);
+        int unresolvedCount = wave.length - Integer.bitCount(presentationResolvedMask);
+        int[] unresolved = new int[Math.max(0, unresolvedCount)];
+        int target = 0;
+        for (int slot = 0; slot < wave.length; slot++) {
+            if ((presentationResolvedMask & (1 << slot)) == 0) {
+                unresolved[target++] = wave[slot];
+            }
+        }
+        return target == unresolved.length ? unresolved : Arrays.copyOf(unresolved, target);
     }
 
     public int categoryActionCount() {
@@ -400,6 +502,10 @@ public final class ContestSession {
 
     public boolean isFinished() {
         return phase == ContestPhase.RESULTS;
+    }
+
+    public boolean presentationOnly() {
+        return presentationOnly;
     }
 
     public record MoveOption(String name, int appeal, boolean matchesCategory, boolean empty) {

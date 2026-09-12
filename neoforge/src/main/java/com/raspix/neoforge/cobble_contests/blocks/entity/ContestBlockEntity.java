@@ -4,6 +4,7 @@ import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.api.moves.Move;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.raspix.common.cobble_contests.contest.ContestEvaluation;
+import com.raspix.common.cobble_contests.contest.ContestPhase;
 import com.raspix.common.cobble_contests.contest.ContestSession;
 import com.raspix.neoforge.cobble_contests.CobbleContestsForge;
 import com.raspix.neoforge.cobble_contests.CobbleContestsMoves;
@@ -125,9 +126,11 @@ public class ContestBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     /** Starts an interactive contest, deriving every sensitive value on the server. */
-    public void startContestSession(ServerPlayer player, int pokemonIndex, int requestedType) {
+    public void startContestSession(ServerPlayer player, int pokemonIndex, int requestedType,
+                                    int requestedRank) {
         if (level == null || level.isClientSide || pokemonIndex < 0 || pokemonIndex > 5
-                || requestedType < 0 || requestedType > 4) {
+                || requestedType < 0 || requestedType > 4
+                || requestedRank < 0 || requestedRank >= REQUIRED_SCORES.length) {
             return;
         }
         if (activeContests.containsKey(player.getUUID())) {
@@ -141,12 +144,13 @@ public class ContestBlockEntity extends BlockEntity implements MenuProvider {
         }
 
         Ribbons ribbons = Ribbons.getFromTag(pokemon.getPersistentData().getCompound("Ribbons"));
-        int rank = ribbons.getNextContestLevel(requestedType);
-        if (rank >= REQUIRED_SCORES.length) {
+        int nextRank = ribbons.getNextContestLevel(requestedType);
+        int highestAvailableRank = Math.min(nextRank, REQUIRED_SCORES.length - 1);
+        if (requestedRank > highestAvailableRank) {
             player.displayClientMessage(Component.translatable(
-                    "cobble_contests.contest_result.maxed_ranked",
-                    pokemon.getDisplayName(false).getString(), getContestTypeString(requestedType)
-            ).withStyle(ChatFormatting.LIGHT_PURPLE), false);
+                    "cobble_contests.error.rank_locked",
+                    getContestLevelString(requestedRank), pokemon.getDisplayName(false).getString()
+            ).withStyle(ChatFormatting.RED), false);
             return;
         }
 
@@ -163,12 +167,12 @@ public class ContestBlockEntity extends BlockEntity implements MenuProvider {
         List<ContestSession.MoveOption> moves = createMoveOptions(pokemon, requestedType);
         long gameTime = level.getGameTime();
         ContestSession session = new ContestSession(
-                player.getUUID(), pokemonIndex, requestedType, rank, evaluationScore,
-                moves, level.getRandom().nextLong(), gameTime
+                player.getUUID(), pokemonIndex, requestedType, requestedRank, evaluationScore,
+                moves, level.getRandom().nextLong(), gameTime, true
         );
         activeContests.put(player.getUUID(), new ActiveContest(session, pokemon));
         PacketDistributor.sendToPlayer(player, CBContestState.from(
-                session, worldPosition, gameTime, REQUIRED_SCORES[rank]
+                session, worldPosition, gameTime, REQUIRED_SCORES[requestedRank]
         ));
     }
 
@@ -229,6 +233,13 @@ public class ContestBlockEntity extends BlockEntity implements MenuProvider {
 
     private void completeContest(ServerPlayer player, ActiveContest active) {
         ContestSession session = active.session;
+        if (session.presentationOnly()) {
+            player.displayClientMessage(Component.translatable(
+                    "cobble_contests.contest_result.presentation_test_complete",
+                    session.phaseScores()[ContestPhase.PRESENTATION.ordinal()]
+            ).withStyle(ChatFormatting.AQUA), false);
+            return;
+        }
         int required = REQUIRED_SCORES[session.rank()];
         boolean won = session.totalScore() >= required;
         String pokemonName = active.pokemon.getDisplayName(false).getString();

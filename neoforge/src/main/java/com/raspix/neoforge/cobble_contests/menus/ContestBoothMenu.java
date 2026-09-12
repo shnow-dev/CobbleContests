@@ -80,9 +80,11 @@ public class ContestBoothMenu extends AbstractContainerMenu {
         return this.blockEntity.getContestResults();
     }
 
-    public void startStatAssesment(UUID player, int pokemonIdx, int contestType){
+    public void startStatAssesment(UUID player, int pokemonIdx, int contestType, int contestRank){
         //PacketHandler.sendToServer(new CBERunContest(player, pokemonIdx, blockEntity.getBlockPos(), contestType, 0));
-        PacketDistributor.sendToServer(new SBRunContest(player, pokemonIdx, blockEntity.getBlockPos(), contestType, 0));
+        PacketDistributor.sendToServer(new SBRunContest(
+                player, pokemonIdx, blockEntity.getBlockPos(), contestType, contestRank
+        ));
     }
 
     public void sendContestAction(UUID sessionId, int phase, int stateVersion, int value) {

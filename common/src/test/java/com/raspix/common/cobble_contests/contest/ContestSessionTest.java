@@ -70,6 +70,56 @@ class ContestSessionTest {
     }
 
     @Test
+    void presentationPreviewStopsWithoutRunningOrRewardingLaterPhases() {
+        long seed = 42L;
+        ContestSession session = new ContestSession(
+                UUID.randomUUID(), 0, ContestSession.COOL_CATEGORY, 0, 80,
+                List.of(), seed, 0L, true
+        );
+        while (session.phase() == ContestPhase.PRESENTATION) {
+            int wave = session.progress();
+            long deadline = session.timingTargetAt();
+            for (int packed : session.presentationTargets()) {
+                if (PresentationBubbleChallenge.unpackType(packed)
+                        == PresentationBubbleChallenge.BubbleType.POSITIVE_HEART) {
+                    assertTrue(session.act(
+                            PresentationBubbleChallenge.unpackBubbleIndex(packed),
+                            Math.max(41L, deadline - 1L)
+                    ));
+                }
+            }
+            if (session.phase() == ContestPhase.PRESENTATION && session.progress() == wave) {
+                assertTrue(session.tick(deadline));
+            }
+        }
+
+        assertEquals(ContestPhase.RESULTS, session.phase());
+        assertEquals(100, session.phaseScores()[ContestPhase.PRESENTATION.ordinal()]);
+        assertEquals(PresentationBubbleChallenge.MAX_GAUGE, session.resolvedTargets());
+        assertEquals(0, session.phaseScores()[ContestPhase.EVALUATION.ordinal()]);
+        assertTrue(session.presentationOnly());
+    }
+
+    @Test
+    void presentationPreviewOnlyAcceptsTheCurrentBubbleWhileItIsVisible() {
+        ContestSession session = new ContestSession(
+                UUID.randomUUID(), 0, ContestSession.COOL_CATEGORY, 0, 80,
+                List.of(), 42L, 0L, true
+        );
+
+        assertFalse(session.act(0, 39L));
+        assertFalse(session.act(99, 41L));
+        int currentBubble = PresentationBubbleChallenge.unpackBubbleIndex(
+                session.presentationTargets()[0]
+        );
+        assertFalse(session.act(currentBubble, session.timingTargetAt()));
+        assertEquals(0, session.progress());
+
+        assertTrue(session.tick(session.timingTargetAt()));
+        assertEquals(1, session.progress());
+    }
+
+    @Test
     void beautyCompositionUsesTheServerTheme() {
         long seed = 17L;
         ContestSession session = advanceToCategory(ContestSession.BEAUTY_CATEGORY, 0, seed);
