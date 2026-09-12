@@ -1,6 +1,7 @@
 package com.raspix.neoforge.cobble_contests.network;
 
 import com.raspix.common.cobble_contests.contest.ContestSession;
+import com.raspix.common.cobble_contests.contest.PresentationBubbleChallenge;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -26,12 +27,24 @@ public final class CBContestState implements CustomPacketPayload {
             int timingTicks = buf.readInt();
             int progress = buf.readInt();
             int packedTargets = buf.readInt();
+            int presentationTargetCount = buf.readVarInt();
+            if (presentationTargetCount < 0
+                    || presentationTargetCount > PresentationBubbleChallenge.MAX_ACTIVE_BUBBLES) {
+                throw new IllegalArgumentException(
+                        "Invalid presentation target count " + presentationTargetCount
+                );
+            }
+            int[] presentationTargets = new int[presentationTargetCount];
+            for (int index = 0; index < presentationTargets.length; index++) {
+                presentationTargets[index] = buf.readInt();
+            }
             int resolvedTargets = buf.readInt();
             int stateVersion = buf.readInt();
             int totalScore = buf.readInt();
             int requiredScore = buf.readInt();
             boolean finished = buf.readBoolean();
             boolean won = buf.readBoolean();
+            boolean presentationPreview = buf.readBoolean();
             int[] scores = new int[6];
             for (int index = 0; index < scores.length; index++) {
                 scores[index] = buf.readInt();
@@ -41,8 +54,10 @@ public final class CBContestState implements CustomPacketPayload {
                 moveNames[index] = buf.readUtf(64);
             }
             return new CBContestState(playerId, sessionId, pos, category, rank, phase,
-                    remainingTicks, timingTicks, progress, packedTargets, resolvedTargets,
-                    stateVersion, totalScore, requiredScore, finished, won, scores, moveNames);
+                    remainingTicks, timingTicks, progress, packedTargets, presentationTargets,
+                    resolvedTargets,
+                    stateVersion, totalScore, requiredScore, finished, won, presentationPreview,
+                    scores, moveNames);
         }
 
         @Override
@@ -57,12 +72,17 @@ public final class CBContestState implements CustomPacketPayload {
             buf.writeInt(payload.timingTicks);
             buf.writeInt(payload.progress);
             buf.writeInt(payload.packedTargets);
+            buf.writeVarInt(payload.presentationTargets.length);
+            for (int presentationTarget : payload.presentationTargets) {
+                buf.writeInt(presentationTarget);
+            }
             buf.writeInt(payload.resolvedTargets);
             buf.writeInt(payload.stateVersion);
             buf.writeInt(payload.totalScore);
             buf.writeInt(payload.requiredScore);
             buf.writeBoolean(payload.finished);
             buf.writeBoolean(payload.won);
+            buf.writeBoolean(payload.presentationPreview);
             for (int score : payload.scores) {
                 buf.writeInt(score);
             }
@@ -82,20 +102,23 @@ public final class CBContestState implements CustomPacketPayload {
     private final int timingTicks;
     private final int progress;
     private final int packedTargets;
+    private final int[] presentationTargets;
     private final int resolvedTargets;
     private final int stateVersion;
     private final int totalScore;
     private final int requiredScore;
     private final boolean finished;
     private final boolean won;
+    private final boolean presentationPreview;
     private final int[] scores;
     private final String[] moveNames;
 
     public CBContestState(UUID playerId, UUID sessionId, BlockPos pos, int category, int rank,
                           int phase, int remainingTicks, int timingTicks, int progress,
-                          int packedTargets, int resolvedTargets, int stateVersion,
+                          int packedTargets, int[] presentationTargets, int resolvedTargets,
+                          int stateVersion,
                           int totalScore, int requiredScore, boolean finished, boolean won,
-                          int[] scores, String[] moveNames) {
+                          boolean presentationPreview, int[] scores, String[] moveNames) {
         this.playerId = playerId;
         this.sessionId = sessionId;
         this.pos = pos.immutable();
@@ -106,12 +129,19 @@ public final class CBContestState implements CustomPacketPayload {
         this.timingTicks = timingTicks;
         this.progress = progress;
         this.packedTargets = packedTargets;
+        this.presentationTargets = Arrays.copyOf(
+                presentationTargets, Math.min(
+                        presentationTargets.length,
+                        PresentationBubbleChallenge.MAX_ACTIVE_BUBBLES
+                )
+        );
         this.resolvedTargets = resolvedTargets;
         this.stateVersion = stateVersion;
         this.totalScore = totalScore;
         this.requiredScore = requiredScore;
         this.finished = finished;
         this.won = won;
+        this.presentationPreview = presentationPreview;
         this.scores = Arrays.copyOf(scores, 6);
         this.moveNames = Arrays.copyOf(moveNames, 4);
     }
@@ -122,9 +152,12 @@ public final class CBContestState implements CustomPacketPayload {
                 session.playerId(), session.sessionId(), pos, session.category(), session.rank(),
                 session.phase().ordinal(), (int) Math.max(0L, session.phaseEndsAt() - gameTime),
                 (int) (session.timingTargetAt() - gameTime), session.progress(),
-                session.packedTargets(), session.resolvedTargets(), session.stateVersion(),
+                session.packedTargets(), session.presentationTargets(), session.resolvedTargets(),
+                session.stateVersion(),
                 session.totalScore(), requiredScore, session.isFinished(),
-                session.isFinished() && session.totalScore() >= requiredScore,
+                !session.presentationOnly() && session.isFinished()
+                        && session.totalScore() >= requiredScore,
+                session.presentationOnly(),
                 session.phaseScores(), session.moveNames()
         );
     }
@@ -139,12 +172,16 @@ public final class CBContestState implements CustomPacketPayload {
     public int timingTicks() { return timingTicks; }
     public int progress() { return progress; }
     public int packedTargets() { return packedTargets; }
+    public int[] presentationTargets() {
+        return Arrays.copyOf(presentationTargets, presentationTargets.length);
+    }
     public int resolvedTargets() { return resolvedTargets; }
     public int stateVersion() { return stateVersion; }
     public int totalScore() { return totalScore; }
     public int requiredScore() { return requiredScore; }
     public boolean finished() { return finished; }
     public boolean won() { return won; }
+    public boolean presentationPreview() { return presentationPreview; }
     public int[] scores() { return Arrays.copyOf(scores, scores.length); }
     public String[] moveNames() { return Arrays.copyOf(moveNames, moveNames.length); }
 

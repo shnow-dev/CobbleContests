@@ -97,7 +97,9 @@ public class SBRunContest implements CustomPacketPayload {
         BlockEntity blockEntity = player.serverLevel().getBlockEntity(data.pos);
         if (blockEntity instanceof ContestBlockEntity contestBlock
                 && menu.getBlockEntity() == contestBlock) {
-            contestBlock.startContestSession(player, data.index, data.contestType);
+            contestBlock.startContestSession(
+                    player, data.index, data.contestType, data.contestLevel
+            );
         }
     }
 

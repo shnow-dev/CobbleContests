@@ -19,24 +19,31 @@ public final class SBContestAction implements CustomPacketPayload {
     public static final StreamCodec<FriendlyByteBuf, SBContestAction> PACKET_CODEC = new StreamCodec<>() {
         @Override
         public @NotNull SBContestAction decode(FriendlyByteBuf buf) {
-            return new SBContestAction(buf.readUUID(), buf.readBlockPos(), buf.readInt());
+            return new SBContestAction(buf.readUUID(), buf.readBlockPos(),
+                    buf.readInt(), buf.readInt(), buf.readInt());
         }
 
         @Override
         public void encode(FriendlyByteBuf buf, SBContestAction payload) {
             buf.writeUUID(payload.sessionId);
             buf.writeBlockPos(payload.pos);
+            buf.writeInt(payload.phase);
+            buf.writeInt(payload.stateVersion);
             buf.writeInt(payload.value);
         }
     };
 
     private final UUID sessionId;
     private final BlockPos pos;
+    private final int phase;
+    private final int stateVersion;
     private final int value;
 
-    public SBContestAction(UUID sessionId, BlockPos pos, int value) {
+    public SBContestAction(UUID sessionId, BlockPos pos, int phase, int stateVersion, int value) {
         this.sessionId = sessionId;
         this.pos = pos.immutable();
+        this.phase = phase;
+        this.stateVersion = stateVersion;
         this.value = value;
     }
 
@@ -51,7 +58,9 @@ public final class SBContestAction implements CustomPacketPayload {
         BlockEntity blockEntity = player.serverLevel().getBlockEntity(data.pos);
         if (blockEntity instanceof ContestBlockEntity contestBlock
                 && menu.getBlockEntity() == contestBlock) {
-            contestBlock.handleContestAction(player, data.sessionId, data.value);
+            contestBlock.handleContestAction(
+                    player, data.sessionId, data.phase, data.stateVersion, data.value
+            );
         }
     }
 

@@ -1,0 +1,18 @@
+{
+  "music.menu": {
+    "sounds": [
+      {
+        "name": "cobble_contests:music/menu",
+        "stream": true
+      }
+    ]
+  },
+  "music.challenge": {
+    "sounds": [
+      {
+        "name": "cobble_contests:music/challenge",
+        "stream": true
+      }
+    ]
+  }
+}
