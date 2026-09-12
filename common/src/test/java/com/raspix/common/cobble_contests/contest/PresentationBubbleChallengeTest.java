@@ -37,11 +37,11 @@ class PresentationBubbleChallengeTest {
 
         assertEquals(PresentationBubbleChallenge.BUBBLE_COUNT, total);
         assertEquals(PresentationBubbleChallenge.POSITIVE_COUNT,
-                counts.get(PresentationBubbleChallenge.BubbleType.POSITIVE_HEART));
+                counts.get(PresentationBubbleChallenge.BubbleType.POSITIVE_HEART).intValue());
         assertEquals(PresentationBubbleChallenge.NEGATIVE_COUNT,
-                counts.get(PresentationBubbleChallenge.BubbleType.NEGATIVE_HEART));
+                counts.get(PresentationBubbleChallenge.BubbleType.NEGATIVE_HEART).intValue());
         assertEquals(PresentationBubbleChallenge.NEUTRAL_COUNT,
-                counts.get(PresentationBubbleChallenge.BubbleType.BORED));
+                counts.get(PresentationBubbleChallenge.BubbleType.BORED).intValue());
     }
 
     @Test
