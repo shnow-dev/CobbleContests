@@ -515,7 +515,7 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
             case 1 -> 1.10F;
             default -> 1.35F;
         };
-        minecraft.player.playSound(SoundEvents.NOTE_BLOCK_CHIME, cue == 0 ? 1.0F : 0.78F, pitch);
+        minecraft.player.playSound(SoundEvents.NOTE_BLOCK_CHIME.value(), cue == 0 ? 1.0F : 0.78F, pitch);
     }
 
     private int countdownCue(long now) {
