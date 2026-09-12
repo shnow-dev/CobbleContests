@@ -1,3 +1,9 @@
+Cobble Contests 0.3.0 (NeoForge)
+-Adds interactive category challenges for Beauty, Grace, Intelligence, and Toughness
+-Scales Grace paths, Intelligence sequences, and Toughness threats with contest rank
+-Runs every category through the permanent six-phase server-authoritative contest engine
+-Adds category-specific interfaces and English/French instructions
+
 Cobble Contests 0.2.0 (NeoForge)
 -Adds the permanent six-phase contest engine and approved weighted scoring
 -Makes Evaluation 40% of the final score with a stricter quadratic condition curve
