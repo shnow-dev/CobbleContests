@@ -218,7 +218,8 @@ public final class ContestBoothScreen extends AbstractContainerScreen<ContestBoo
         return gauge >= 5 ? 5 : 0;
     }
 
-    private void rebuildWidgets() {
+    @Override
+    protected void rebuildWidgets() {
         clearWidgets();
         switch (page) {
             case WELCOME -> createWelcomeWidgets();
